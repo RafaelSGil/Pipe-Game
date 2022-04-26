@@ -1,0 +1,17 @@
+﻿  main.c
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(56,79): warning C4047: 'função': 'LPDWORD' difere em níveis de indireção de 'unsigned long'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(56,70): warning C4024: 'RegQueryValueExW': tipos diferentes para parâmetro formal e real 4
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(56,114): warning C4047: 'função': 'LPDWORD' difere em níveis de indireção de 'size_t'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(56,101): warning C4024: 'RegQueryValueExW': tipos diferentes para parâmetro formal e real 6
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(57,85): warning C4047: 'função': 'LPDWORD' difere em níveis de indireção de 'unsigned long'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(57,76): warning C4024: 'RegQueryValueExW': tipos diferentes para parâmetro formal e real 4
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(57,123): warning C4047: 'função': 'LPDWORD' difere em níveis de indireção de 'size_t'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(57,110): warning C4024: 'RegQueryValueExW': tipos diferentes para parâmetro formal e real 6
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(58,79): warning C4047: 'função': 'LPDWORD' difere em níveis de indireção de 'unsigned long'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(58,70): warning C4024: 'RegQueryValueExW': tipos diferentes para parâmetro formal e real 4
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(58,114): warning C4047: 'função': 'LPDWORD' difere em níveis de indireção de 'size_t'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(58,101): warning C4024: 'RegQueryValueExW': tipos diferentes para parâmetro formal e real 6
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(70,30): warning C4311: 'conversão de tipo': truncamento de ponteiro de 'TCHAR *' para 'DWORD'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(71,33): warning C4311: 'conversão de tipo': truncamento de ponteiro de 'TCHAR *' para 'DWORD'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(72,30): warning C4311: 'conversão de tipo': truncamento de ponteiro de 'TCHAR *' para 'DWORD'
+  Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe

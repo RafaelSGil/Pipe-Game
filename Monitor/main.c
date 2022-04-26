@@ -8,7 +8,7 @@
 
 int _tmain(int argc, TCHAR** argv) {
 
-	_tprintf(TEXT("IM THE CLIENT"));
+	_tprintf(TEXT("IM THE MONITOR"));
 
 	return 0;
 }
