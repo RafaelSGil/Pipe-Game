@@ -1,3 +1,4 @@
 ﻿  main.c
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(97,7): warning C4022: 'free': incompatibilidade de ponteiro para parâmetro real 1
-  Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\main.c(43,15): warning C4013: 'initBoard' indefinido; assumindo extern retornando int
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\main.c(203,13): warning C4133: 'função': tipos incompatíveis - de 'char [256]' para 'wchar_t *'
+  Server.vcxproj -> C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Pipe Game\x64\Debug\Server.exe

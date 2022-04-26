@@ -4,10 +4,13 @@
 #include <stdio.h>	
 #include <stdlib.h>
 #include <tchar.h>
+
 #define BUFFER 256
 #define SIZE_DWORD 257*(sizeof(DWORD))
-
-
+#define SHM_NAME TEXT("fmMsgSpace") // Name of the shared memory
+#define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
+#define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
+#define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning 
 
 typedef struct _Game{
 	TCHAR* board;
@@ -23,18 +26,104 @@ typedef struct _Registry{
 	TCHAR name[BUFFER];
 }Registry;
 
+typedef struct _ControlData {
+	unsigned int shutdown; // Release
+	unsigned int id; // Id from the process
+	HANDLE hMapFile; // Memory
+	Game* sharedMem; // Shared memory of the game
+	HANDLE hMutex; // Mutext
+	HANDLE hWriteSem; // Light warns writting
+	HANDLE hReadSem; // Light warns reading 
+}ControlData;
 
-void initBoard(Game* game) {
 
-	game->board = (TCHAR*)malloc(game->rows * game->columns * sizeof(TCHAR));
+BOOL initMemAndSync(ControlData* p){
+	BOOL firstProcess = FALSE;
 
-	if (game->board != NULL) {
-		_tprintf(TEXT("\nMemory alocation for the board done successfully\n"));
+	if (initBoard(p) == -1) {
+		_tprintf(TEXT("Error initializing the board!\n"));
+		return FALSE;
 	}
-	for (DWORD i = 0; i < game->rows * game->columns; i++)
-		_tcscpy_s(&game->board[i], sizeof(TCHAR), TEXT("_"));;
+
+	p->hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, SHM_NAME);
+
+	if (p->hMapFile == NULL) { // Map
+		firstProcess = TRUE;
+		_tprintf(TEXT("Im going to create a new file mapped!\n"));
+		p->hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(Game), SHM_NAME);
+
+		if (p->hMapFile == NULL) {
+			_tprintf(TEXT("Erro CreateFileMapping (%d)\n"), GetLastError());
+			free(p->sharedMem->board);
+			return FALSE;
+		}
+	}
+
+	p->sharedMem = (Game*)MapViewOfFile(p->hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(Game)); // Shared Memory
+	if (p->sharedMem == NULL) {
+		_tprintf(TEXT("Error: MapViewOfFile (%d)"), GetLastError());
+		CloseHandle(p->hMapFile);
+		return FALSE;
+	}
+
+	p->hMutex = CreateMutex(NULL, FALSE, MUTEX_NAME);
+	if (p->hMutex == NULL) {
+		_tprintf(TEXT("Error creating mutex (%d)\n"), GetLastError());
+		free(p->sharedMem->board);
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		return FALSE;
+	}
+
+	DWORD lMaximumSem = 1;
+
+	p->hWriteSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_WRITE_NAME);
+	if(p->hWriteSem == NULL){
+		_tprintf(TEXT("Error creating writting semaphore: (%d)\n"), GetLastError());
+		free(p->sharedMem->board);
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		return FALSE;
+	}
+
+
+	p->hReadSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_READ_NAME);
+	if (p->hReadSem == NULL) {
+		_tprintf(TEXT("Error creating reading semaphore (%d)\n"), GetLastError());
+		free(p->sharedMem->board);
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		return FALSE;
+	}
+
+	//showBoard(p);
+
+	return TRUE;
 }
-void showBoard(Game *game) {
+
+
+int initBoard(ControlData* data) {
+
+	data->sharedMem->board = (TCHAR*)malloc((data->sharedMem->rows * data->sharedMem->columns) * sizeof(TCHAR));
+
+	if (data->sharedMem->board != NULL) {
+		_tprintf(TEXT("\nMemory alocation for the board done successfully\n"));
+	}else {
+		_tprintf(TEXT("\nMemory alocation wasnt done successfully\n"));
+		return -1;
+	}
+
+	for (DWORD i = 0; i < data->sharedMem->rows * data->sharedMem->columns; i++) {
+		_tcscpy_s(&data->sharedMem->board[i], sizeof(TCHAR), TEXT("_"));
+	}
+
+	return 1;
+}
+
+void showBoard(Game* game) {
 	for (DWORD i = 0; i < game->rows; i++)
 	{
 		_tprintf(TEXT("\n"));
@@ -55,6 +144,8 @@ int _tmain(int argc, TCHAR** argv) {
 // Variables
 	Game game;
 	Registry registry;
+	ControlData controlData;
+	controlData.sharedMem = &game;
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
 
 	if (argc != 4) {
@@ -95,13 +186,20 @@ int _tmain(int argc, TCHAR** argv) {
 		game.time =  _ttoi(argv[3]);
 	}
 
-	// Initializes the board for the game
-	initBoard(&game);
+	if (!initMemAndSync(&controlData)) {
+		_tprintf(_T("Error creating/opening shared memory and synchronization mechanisms\n"));
+		exit(1);
+	}
+
+	WaitForSingleObject(controlData.hWriteSem, INFINITE);
+
+
 	// Shows the board for the game
 	showBoard(&game);
 
 	// Frees the memory of the board
-	free(*game.board);
+	free(controlData.sharedMem->board);
+
 
 	// Closes the key for the registry
 	RegCloseKey(registry.key);
