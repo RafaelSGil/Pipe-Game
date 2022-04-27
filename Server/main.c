@@ -39,7 +39,7 @@ typedef struct _ControlData {
 
 BOOL initMemAndSync(ControlData* p){
 	BOOL firstProcess = FALSE;
-
+	_tprintf(TEXT("Configs for the game initializing...\n"));
 	if (initBoard(p) == -1) {
 		_tprintf(TEXT("Error initializing the board!\n"));
 		return FALSE;
@@ -49,7 +49,6 @@ BOOL initMemAndSync(ControlData* p){
 
 	if (p->hMapFile == NULL) { // Map
 		firstProcess = TRUE;
-		_tprintf(TEXT("Im going to create a new file mapped!\n"));
 		p->hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(Game), SHM_NAME);
 
 		if (p->hMapFile == NULL) {
@@ -99,8 +98,42 @@ BOOL initMemAndSync(ControlData* p){
 		return FALSE;
 	}
 
-	//showBoard(p);
 
+	return TRUE;
+}
+
+BOOL configGame(Registry* registry, ControlData* controlData) {
+	// Verifies if the key exists
+	if (RegOpenKeyEx(HKEY_CURRENT_USER, registry->keyCompletePath, 0, KEY_ALL_ACCESS, &registry->key) != ERROR_SUCCESS) {
+		// If doesnt exists creates the key
+		if (RegCreateKeyEx(HKEY_CURRENT_USER, registry->keyCompletePath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, registry->key, registry->dposition) == ERROR_SUCCESS)
+		{
+			_tprintf_s(TEXT("\nI just created the key for the PipeGame!"));
+			DWORD rows = 10;
+			DWORD columns = 10;
+			DWORD time = 100;
+
+			// Creates chain of values
+			long rowsSet = RegSetValueEx(registry->key, TEXT("Rows"), 0, REG_DWORD, (LPBYTE)&rows, sizeof(DWORD));
+			long columnsSet = RegSetValueEx(registry->key, TEXT("Columns"), 0, REG_DWORD, (LPBYTE)&columns, sizeof(DWORD));
+			long timeSet = RegSetValueEx(registry->key, TEXT("Time"), 0, REG_DWORD, (LPBYTE)&time, sizeof(DWORD));
+
+			if (rowsSet != ERROR_SUCCESS || columnsSet != ERROR_SUCCESS || timeSet != ERROR_SUCCESS) {
+				_tprintf_s(TEXT("\nCouldnt configure the values for the pipe game!"));
+				return FALSE;
+			}
+		}
+	}
+	DWORD sizeDword = SIZE_DWORD;
+	// Querys the values for the variables
+	long rowsRead = RegQueryValueEx(registry->key, TEXT("Rows"), NULL, NULL, (LPBYTE)&controlData->sharedMem->rows, &sizeDword);
+	long columnsRead = RegQueryValueEx(registry->key, TEXT("Columns"), NULL, NULL, (LPBYTE)&controlData->sharedMem->columns, &sizeDword);
+	long timeRead = RegQueryValueEx(registry->key, TEXT("Time"), NULL, NULL, (LPBYTE)&controlData->sharedMem->time, &sizeDword);
+
+	if (rowsRead != ERROR_SUCCESS || columnsRead != ERROR_SUCCESS || timeRead != ERROR_SUCCESS) {
+		_tprintf_s(TEXT("\nCouldnt read the values for the pipe game!"));
+		return FALSE;
+	}
 	return TRUE;
 }
 
@@ -110,7 +143,7 @@ int initBoard(ControlData* data) {
 	data->sharedMem->board = (TCHAR*)malloc((data->sharedMem->rows * data->sharedMem->columns) * sizeof(TCHAR));
 
 	if (data->sharedMem->board != NULL) {
-		_tprintf(TEXT("\nMemory alocation for the board done successfully\n"));
+		_tprintf(TEXT("\nBoard loaded!\n"));
 	}else {
 		_tprintf(TEXT("\nMemory alocation wasnt done successfully\n"));
 		return -1;
@@ -145,40 +178,17 @@ int _tmain(int argc, TCHAR** argv) {
 	Game game;
 	Registry registry;
 	ControlData controlData;
+	DWORD lMaximumSem = 1;
 	controlData.sharedMem = &game;
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
 
+	_tprintf(TEXT("-------------------PIPEGAME---------------\n\n\n"));
+
+
 	if (argc != 4) {
-		// Verifies if the key exists
-		if (RegOpenKeyEx(HKEY_CURRENT_USER, registry.keyCompletePath, 0, KEY_ALL_ACCESS, &registry.key) != ERROR_SUCCESS) {
-			// If doesnt exists creates the key
-			if (RegCreateKeyEx(HKEY_CURRENT_USER, registry.keyCompletePath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &registry.key, &registry.dposition) == ERROR_SUCCESS)
-			{
-				_tprintf_s(TEXT("\nI just created the key for the PipeGame!"));
-				DWORD rows = 10;
-				DWORD columns = 10;
-				DWORD time = 100;
-
-				// Creates chain of values
-				long rowsSet = RegSetValueEx(registry.key, TEXT("Rows"), 0, REG_DWORD, (LPBYTE)&rows, sizeof(DWORD));
-				long columnsSet = RegSetValueEx(registry.key, TEXT("Columns"), 0, REG_DWORD, (LPBYTE)&columns, sizeof(DWORD));
-				long timeSet = RegSetValueEx(registry.key, TEXT("Time"), 0, REG_DWORD, (LPBYTE)&time, sizeof(DWORD));
-
-				if (rowsSet != ERROR_SUCCESS || columnsSet != ERROR_SUCCESS || timeSet != ERROR_SUCCESS) {
-					_tprintf_s(TEXT("\nCouldnt configure the values for the pipe game!"));
-					return -1;
-				}
-			}
-		}
-		DWORD sizeDword = SIZE_DWORD;
-		// Querys the values for the variables
-		long rowsRead = RegQueryValueEx(registry.key, TEXT("Rows"), NULL, NULL, (LPBYTE)&game.rows, &sizeDword);
-		long columnsRead = RegQueryValueEx(registry.key, TEXT("Columns"), NULL, NULL, (LPBYTE)&game.columns, &sizeDword);
-		long timeRead = RegQueryValueEx(registry.key, TEXT("Time"), NULL, NULL, (LPBYTE)&game.time, &sizeDword);
-			
-		if (rowsRead != ERROR_SUCCESS || columnsRead != ERROR_SUCCESS || timeRead != ERROR_SUCCESS) {
-			_tprintf_s(TEXT("\nCouldnt read the values for the pipe game!"));
-			return -1;
+		if (!configGame(&registry, &controlData)) {
+			_tprintf(_T("Error during configuration of the game\n"));
+			exit(1);
 		}
 	}else {
 		game.rows = _ttoi(argv[1]);
@@ -192,7 +202,7 @@ int _tmain(int argc, TCHAR** argv) {
 	}
 
 	WaitForSingleObject(controlData.hWriteSem, INFINITE);
-
+	WaitForSingleObject(controlData.hReadSem, INFINITE);
 
 	// Shows the board for the game
 	showBoard(&game);
@@ -200,9 +210,16 @@ int _tmain(int argc, TCHAR** argv) {
 	// Frees the memory of the board
 	free(controlData.sharedMem->board);
 
+	// Release the semaphores
+	ReleaseSemaphore(controlData.hWriteSem, lMaximumSem, NULL);
+	ReleaseSemaphore(controlData.hReadSem, lMaximumSem, NULL);
 
-	// Closes the key for the registry
+	// Closing of all the handles
 	RegCloseKey(registry.key);
-
+	UnmapViewOfFile(controlData.sharedMem);
+	CloseHandle(controlData.hMapFile);
+	CloseHandle(controlData.hMutex);
+	CloseHandle(controlData.hWriteSem);
+	CloseHandle(controlData.hReadSem);
 	return 0;
 }
