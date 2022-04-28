@@ -39,9 +39,9 @@ typedef struct _ControlData {
 
 BOOL initMemAndSync(ControlData* p){
 	BOOL firstProcess = FALSE;
-	_tprintf(TEXT("Configs for the game initializing...\n"));
+	_tprintf(TEXT("\nConfigs for the game initializing...\n"));
 	if (initBoard(p) == -1) {
-		_tprintf(TEXT("Error initializing the board!\n"));
+		_tprintf(TEXT("\nError initializing the board!\n"));
 		return FALSE;
 	}
 
@@ -52,7 +52,7 @@ BOOL initMemAndSync(ControlData* p){
 		p->hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(Game), SHM_NAME);
 
 		if (p->hMapFile == NULL) {
-			_tprintf(TEXT("Erro CreateFileMapping (%d)\n"), GetLastError());
+			_tprintf(TEXT("\nErro CreateFileMapping (%d)\n"), GetLastError());
 			free(p->sharedMem->board);
 			return FALSE;
 		}
@@ -60,14 +60,14 @@ BOOL initMemAndSync(ControlData* p){
 
 	p->sharedMem = (Game*)MapViewOfFile(p->hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(Game)); // Shared Memory
 	if (p->sharedMem == NULL) {
-		_tprintf(TEXT("Error: MapViewOfFile (%d)"), GetLastError());
+		_tprintf(TEXT("\nError: MapViewOfFile (%d)"), GetLastError());
 		CloseHandle(p->hMapFile);
 		return FALSE;
 	}
 
 	p->hMutex = CreateMutex(NULL, FALSE, MUTEX_NAME);
 	if (p->hMutex == NULL) {
-		_tprintf(TEXT("Error creating mutex (%d)\n"), GetLastError());
+		_tprintf(TEXT("\nError creating mutex (%d)\n"), GetLastError());
 		free(p->sharedMem->board);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
@@ -78,7 +78,7 @@ BOOL initMemAndSync(ControlData* p){
 
 	p->hWriteSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_WRITE_NAME);
 	if(p->hWriteSem == NULL){
-		_tprintf(TEXT("Error creating writting semaphore: (%d)\n"), GetLastError());
+		_tprintf(TEXT("\nError creating writting semaphore: (%d)\n"), GetLastError());
 		free(p->sharedMem->board);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
@@ -86,16 +86,37 @@ BOOL initMemAndSync(ControlData* p){
 		return FALSE;
 	}
 
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		_tprintf(TEXT("\nCant run two servers at once\n"));
+		free(p->sharedMem->board);
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		ExitProcess(1);
+	}
+
 
 	p->hReadSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_READ_NAME);
 	if (p->hReadSem == NULL) {
-		_tprintf(TEXT("Error creating reading semaphore (%d)\n"), GetLastError());
+		_tprintf(TEXT("\nError creating reading semaphore (%d)\n"), GetLastError());
 		free(p->sharedMem->board);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
 		return FALSE;
+	}
+
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		_tprintf(TEXT("\nCant run two servers at once\n"));
+		free(p->sharedMem->board);
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hReadSem);
+		ExitProcess(1);
 	}
 
 
@@ -182,6 +203,7 @@ int _tmain(int argc, TCHAR** argv) {
 	controlData.sharedMem = &game;
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
 
+
 	_tprintf(TEXT("-------------------PIPEGAME---------------\n\n\n"));
 
 
@@ -213,6 +235,9 @@ int _tmain(int argc, TCHAR** argv) {
 	// Release the semaphores
 	ReleaseSemaphore(controlData.hWriteSem, lMaximumSem, NULL);
 	ReleaseSemaphore(controlData.hReadSem, lMaximumSem, NULL);
+
+	//TCHAR test[BUFFER];
+	//_fgetts(test, BUFFER, stdin);
 
 	// Closing of all the handles
 	RegCloseKey(registry.key);

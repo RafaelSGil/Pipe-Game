@@ -1,7 +1,7 @@
 ﻿  main.c
 C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(43,15): warning C4013: 'initBoard' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(109,137): warning C4047: 'função': 'PHKEY' difere em níveis de indireção de 'HKEY'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(109,132): warning C4024: 'RegCreateKeyExW': tipos diferentes para parâmetro formal e real 8
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(109,158): warning C4047: 'função': 'LPDWORD' difere em níveis de indireção de 'DWORD'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(109,147): warning C4024: 'RegCreateKeyExW': tipos diferentes para parâmetro formal e real 9
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(130,137): warning C4047: 'função': 'PHKEY' difere em níveis de indireção de 'HKEY'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(130,132): warning C4024: 'RegCreateKeyExW': tipos diferentes para parâmetro formal e real 8
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(130,158): warning C4047: 'função': 'LPDWORD' difere em níveis de indireção de 'DWORD'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(130,147): warning C4024: 'RegCreateKeyExW': tipos diferentes para parâmetro formal e real 9
   Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
