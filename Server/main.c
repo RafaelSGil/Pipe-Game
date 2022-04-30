@@ -178,38 +178,68 @@ int initBoard(ControlData* data) {
 }
 
 void startGame(Game* game) {
-	int randomRowB = -1;
-	int randomColumnB = -1;
+	int randomRow = -1;
+	int randomColumn = -1;
 	int number;
 	srand(time(0));
 	int quadrante = 0;
 
 	number = rand() % 2 + 1;
 
+	_tprintf(TEXT("%d %d"), game->rows, game->columns);
 	if (number == 1) {
-		randomRowB = rand() % game->rows;
+		randomRow = rand() % game->rows;
 
 		number = rand() % 2 + 1;
 
 		if (number == 1)
-			randomColumnB = 0;
+			randomColumn = 0;
 		else
-			randomColumnB = game->columns - 1;
-	}else {
-		randomColumnB = rand() % game->columns;
-
-		number = rand() % 2 + 1;
-
-		if (number == 1)
-			randomRowB = 0;
-		else
-			randomRowB = game->rows - 1;
+			randomColumn = game->columns - 1;
 	}
-	game->board[randomRowB * game->rows + randomColumnB] = 'B';
+	else {
+		randomColumn = rand() % game->columns;
+
+		number = rand() % 2 + 1;
+
+		if (number == 1)
+			randomRow = 0;
+		else
+			randomRow = game->rows - 1;
+	}
+	game->board[randomRow * game->rows + randomColumn] = 'B';
+
+	if (randomRow < game->rows / 2 && randomColumn < game->columns / 2)
+		quadrante = 1;
+	else if (randomRow < game->rows / 2 && randomColumn >= game->columns / 2)
+		quadrante = 2;
+	else if (randomRow >= game->rows / 2 && randomColumn < game->columns / 2)
+		quadrante = 3;
+	else
+		quadrante = 4;
+
+	quadrante = 1;
 
 
+	if (quadrante == 1) {
+		number = rand() % 2 + 1;
+		if (number == 1) {
+			_tprintf(TEXT("\n\n[DEBUG] I´m here! - 1"));
+			randomRow = (rand() % (game->rows) + (game->rows/2));
+			randomColumn = game->columns - 1;
+			_tprintf(TEXT("\n\n[DEBUG] Row = [%d] - Column = [%d]\n"), randomRow, randomColumn);
+		}
+		else {
+			_tprintf(TEXT("\n\n[DEBUG] I´m here! - 2"));
+			randomColumn = (rand() % (game->columns) + (game->columns/2));
+			randomRow = game->rows - 1;
+			_tprintf(TEXT("\n\n[DEBUG] Row = [%d] - Column = [%d]\n"), randomRow, randomColumn);
+		}
+		game->board[randomRow * game->rows + randomColumn] = 'E';
+	}
 
 }
+
 
 void showBoard(Game* game) {
 	for (DWORD i = 0; i < game->rows; i++)
