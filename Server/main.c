@@ -1,4 +1,4 @@
-#include <io.h>
+﻿#include <io.h>
 #include <Windows.h>
 #include <fcntl.h>
 #include <stdio.h>	
@@ -17,6 +17,7 @@ typedef struct _Game{
 	DWORD rows;
 	DWORD columns;
 	DWORD time;
+	TCHAR* pieces;
 }Game;
 
 typedef struct _Registry{
@@ -171,7 +172,7 @@ int initBoard(ControlData* data) {
 	}
 
 	for (DWORD i = 0; i < data->sharedMem->rows * data->sharedMem->columns; i++) {
-		_tcscpy_s(&data->sharedMem->board[i], sizeof(TCHAR), TEXT("_"));
+		_tcscpy_s(&data->sharedMem->board[i], sizeof(TCHAR), TEXT("━"));
 	}
 
 	return 1;
@@ -183,6 +184,14 @@ void startGame(Game* game) {
 	int number;
 	srand(time(0));
 	int quadrante = 0;
+
+	game->pieces = (TCHAR*)malloc(6 * sizeof(TCHAR));
+	_tcscpy_s(&game->pieces[0], sizeof(TCHAR), TEXT("━"));
+	_tcscpy_s(&game->pieces[1], sizeof(TCHAR), TEXT("┃"));
+	_tcscpy_s(&game->pieces[2], sizeof(TCHAR), TEXT("┏"));
+	_tcscpy_s(&game->pieces[3], sizeof(TCHAR), TEXT("┓"));
+	_tcscpy_s(&game->pieces[4], sizeof(TCHAR), TEXT("┛"));
+	_tcscpy_s(&game->pieces[5], sizeof(TCHAR), TEXT("┗"));
 
 	number = rand() % 2 + 1;
 
@@ -322,6 +331,7 @@ int _tmain(int argc, TCHAR** argv) {
 
 	// Frees the memory of the board
 	free(controlData.sharedMem->board);
+	free(controlData.sharedMem->pieces);
 
 	// Release the semaphores
 	ReleaseSemaphore(controlData.hWriteSem, lMaximumSem, NULL);
