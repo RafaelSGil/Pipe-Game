@@ -10,14 +10,14 @@
 #define SHM_NAME TEXT("fmMsgSpace") // Name of the shared memory
 #define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
 #define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
-#define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning 
-
+#define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
 typedef struct _Game{
 	TCHAR* board;
 	DWORD rows;
 	DWORD columns;
 	DWORD time;
 	TCHAR* pieces;
+	BOOL win;
 }Game;
 
 typedef struct _Registry{
@@ -35,8 +35,16 @@ typedef struct _ControlData {
 	HANDLE hMutex; // Mutext
 	HANDLE hWriteSem; // Light warns writting
 	HANDLE hReadSem; // Light warns reading 
+	HANDLE hThreadTime;
 }ControlData;
 
+LPVOID WINAPI decreaseTime(LPVOID data) {
+	Game* aux = (Game*)data;
+	while (TRUE) {
+		aux->time--;
+		Sleep(1000);
+	}
+}
 
 BOOL initMemAndSync(ControlData* p){
 	BOOL firstProcess = FALSE;
@@ -54,6 +62,7 @@ BOOL initMemAndSync(ControlData* p){
 
 		if (p->hMapFile == NULL) {
 			_tprintf(TEXT("\nErro CreateFileMapping (%d)\n"), GetLastError());
+			free(p->sharedMem->pieces);
 			free(p->sharedMem->board);
 			return FALSE;
 		}
@@ -62,6 +71,8 @@ BOOL initMemAndSync(ControlData* p){
 	p->sharedMem = (Game*)MapViewOfFile(p->hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(Game)); // Shared Memory
 	if (p->sharedMem == NULL) {
 		_tprintf(TEXT("\nError: MapViewOfFile (%d)"), GetLastError());
+		free(p->sharedMem->pieces);
+		free(p->sharedMem->board);
 		CloseHandle(p->hMapFile);
 		return FALSE;
 	}
@@ -70,6 +81,7 @@ BOOL initMemAndSync(ControlData* p){
 	if (p->hMutex == NULL) {
 		_tprintf(TEXT("\nError creating mutex (%d)\n"), GetLastError());
 		free(p->sharedMem->board);
+		free(p->sharedMem->pieces);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		return FALSE;
@@ -81,6 +93,7 @@ BOOL initMemAndSync(ControlData* p){
 	if(p->hWriteSem == NULL){
 		_tprintf(TEXT("\nError creating writting semaphore: (%d)\n"), GetLastError());
 		free(p->sharedMem->board);
+		free(p->sharedMem->pieces);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		CloseHandle(p->hMutex);
@@ -88,7 +101,8 @@ BOOL initMemAndSync(ControlData* p){
 	}
 
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
-		_tprintf(TEXT("\nCant run two servers at once\n"));
+		_tprintf(TEXT("\nCant run two servers at once!\n"));
+		free(p->sharedMem->pieces);
 		free(p->sharedMem->board);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
@@ -102,6 +116,7 @@ BOOL initMemAndSync(ControlData* p){
 	if (p->hReadSem == NULL) {
 		_tprintf(TEXT("\nError creating reading semaphore (%d)\n"), GetLastError());
 		free(p->sharedMem->board);
+		free(p->sharedMem->pieces);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		CloseHandle(p->hMutex);
@@ -110,8 +125,9 @@ BOOL initMemAndSync(ControlData* p){
 	}
 
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
-		_tprintf(TEXT("\nCant run two servers at once\n"));
+		_tprintf(TEXT("\nCant run two servers at once!\n"));
 		free(p->sharedMem->board);
+		free(p->sharedMem->pieces);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		CloseHandle(p->hMutex);
@@ -120,9 +136,22 @@ BOOL initMemAndSync(ControlData* p){
 		ExitProcess(1);
 	}
 
+	p->hThreadTime = CreateThread(NULL, 0, &decreaseTime, p->sharedMem, CREATE_SUSPENDED, NULL);
+	if (p->hThreadTime == NULL) {
+		_tprintf(TEXT("\nError creating thread (%d)\n"), GetLastError());
+		free(p->sharedMem->board);
+		free(p->sharedMem->pieces);
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hReadSem);
+		return FALSE;
+	}
 
 	return TRUE;
 }
+
 
 BOOL configGame(Registry* registry, ControlData* controlData) {
 	// Verifies if the key exists
@@ -133,7 +162,7 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 			_tprintf_s(TEXT("\nI just created the key for the PipeGame!"));
 			DWORD rows = 10;
 			DWORD columns = 10;
-			DWORD time = 100;
+			DWORD time = 30;
 
 			// Creates chain of values
 			long rowsSet = RegSetValueEx(registry->key, TEXT("Rows"), 0, REG_DWORD, (LPBYTE)&rows, sizeof(DWORD));
@@ -159,7 +188,6 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 	return TRUE;
 }
 
-
 int initBoard(ControlData* data) {
 
 	data->sharedMem->board = (TCHAR*)malloc((data->sharedMem->rows * data->sharedMem->columns) * sizeof(TCHAR));
@@ -184,6 +212,7 @@ void startGame(Game* game) {
 	int number;
 	srand(time(0));
 	int quadrante = 0;
+	game->win = FALSE;
 
 	game->pieces = (TCHAR*)malloc(6 * sizeof(TCHAR));
 	_tcscpy_s(&game->pieces[0], sizeof(TCHAR), TEXT("━"));
@@ -273,7 +302,6 @@ void startGame(Game* game) {
 	}
 }
 
-
 void showBoard(Game* game) {
 	for (DWORD i = 0; i < game->rows; i++)
 	{
@@ -281,6 +309,7 @@ void showBoard(Game* game) {
 		for (DWORD j = 0; j < game->columns; j++)
 			_tprintf(TEXT("%c "), game->board[i * game->rows + j]);
 	}
+	_tprintf(TEXT("\n"));
 }
 
 
@@ -299,6 +328,7 @@ int _tmain(int argc, TCHAR** argv) {
 	DWORD lMaximumSem = 1;
 	controlData.sharedMem = &game;
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
+	TCHAR option[BUFFER];
 
 
 	_tprintf(TEXT("\n-------------------PIPEGAME---------------\n\n"));
@@ -320,14 +350,28 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 
+	// Waits for the semaphores
 	WaitForSingleObject(controlData.hWriteSem, INFINITE);
 	WaitForSingleObject(controlData.hReadSem, INFINITE);
 
 	// Function to start the game
 	startGame(&game);
-
+	ResumeThread(controlData.hThreadTime);
+	
+	
 	// Shows the board for the game
 	showBoard(&game);
+
+	while (TRUE) {
+		_tprintf(TEXT("\n1 - List Players(in development)"));
+		_tprintf(TEXT("\n2 - Suspend Game(in development)"));
+		_tprintf(TEXT("\n3 - Resume Game(in development)"));
+		_tprintf(TEXT("\n4 - Quit\n\n\n>"));
+
+		_fgetts(option, BUFFER, stdin);
+	}
+	// Waits for the thread to end
+	WaitForSingleObject(controlData.hThreadTime, INFINITE);
 
 	// Frees the memory of the board
 	free(controlData.sharedMem->board);
@@ -336,10 +380,6 @@ int _tmain(int argc, TCHAR** argv) {
 	// Release the semaphores
 	ReleaseSemaphore(controlData.hWriteSem, lMaximumSem, NULL);
 	ReleaseSemaphore(controlData.hReadSem, lMaximumSem, NULL);
-
-	//Getting input from the user for testing the synchronisms
-	//TCHAR test[BUFFER];
-	//_fgetts(test, BUFFER, stdin);
 
 	// Closing of all the handles
 	RegCloseKey(registry.key);
