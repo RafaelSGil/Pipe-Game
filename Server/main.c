@@ -186,7 +186,6 @@ void startGame(Game* game) {
 
 	number = rand() % 2 + 1;
 
-	_tprintf(TEXT("%d %d"), game->rows, game->columns);
 	if (number == 1) {
 		randomRow = rand() % game->rows;
 
@@ -218,26 +217,51 @@ void startGame(Game* game) {
 	else
 		quadrante = 4;
 
-	quadrante = 1;
-
-
 	if (quadrante == 1) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			_tprintf(TEXT("\n\n[DEBUG] I´m here! - 1"));
-			randomRow = (rand() % (game->rows) + (game->rows/2));
+			randomRow = (rand() % (game->rows/2) + (game->rows/2));
 			randomColumn = game->columns - 1;
-			_tprintf(TEXT("\n\n[DEBUG] Row = [%d] - Column = [%d]\n"), randomRow, randomColumn);
 		}
 		else {
-			_tprintf(TEXT("\n\n[DEBUG] I´m here! - 2"));
-			randomColumn = (rand() % (game->columns) + (game->columns/2));
+			randomColumn = (rand() % (game->columns/2) + (game->columns/2));
 			randomRow = game->rows - 1;
-			_tprintf(TEXT("\n\n[DEBUG] Row = [%d] - Column = [%d]\n"), randomRow, randomColumn);
+		}
+		game->board[randomRow * game->rows + randomColumn] = 'E';
+	}else if (quadrante == 2) {
+		number = rand() % 2 + 1;
+		if (number == 1) {
+			randomRow = (rand() % (game->rows / 2) + (game->rows / 2));
+			randomColumn = 0;
+		}
+		else {
+			randomColumn = rand() % (game->columns / 2);
+			randomRow = game->rows-1;
+		}
+		game->board[randomRow * game->rows + randomColumn] = 'E';
+	}else if (quadrante == 3) {
+		number = rand() % 2 + 1;
+		if (number == 1) {
+			randomRow = rand() % (game->rows / 2);
+			randomColumn = game->columns-1;
+		}
+		else {
+			randomColumn = (rand() % (game->columns / 2) + (game->columns/2));
+			randomRow = 0;
+		}
+		game->board[randomRow * game->rows + randomColumn] = 'E';
+	}else if (quadrante == 4) {
+		number = rand() % 2 + 1;
+		if (number == 1) {
+			randomRow = rand() % (game->rows / 2);
+			randomColumn = 0;
+		}
+		else {
+			randomColumn = rand() % (game->columns / 2);
+			randomRow = 0;
 		}
 		game->board[randomRow * game->rows + randomColumn] = 'E';
 	}
-
 }
 
 
