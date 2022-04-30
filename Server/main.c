@@ -177,6 +177,40 @@ int initBoard(ControlData* data) {
 	return 1;
 }
 
+void startGame(Game* game) {
+	int randomRowB = -1;
+	int randomColumnB = -1;
+	int number;
+	srand(time(0));
+	int quadrante = 0;
+
+	number = rand() % 2 + 1;
+
+	if (number == 1) {
+		randomRowB = rand() % game->rows;
+
+		number = rand() % 2 + 1;
+
+		if (number == 1)
+			randomColumnB = 0;
+		else
+			randomColumnB = game->columns - 1;
+	}else {
+		randomColumnB = rand() % game->columns;
+
+		number = rand() % 2 + 1;
+
+		if (number == 1)
+			randomRowB = 0;
+		else
+			randomRowB = game->rows - 1;
+	}
+	game->board[randomRowB * game->rows + randomColumnB] = 'B';
+
+
+
+}
+
 void showBoard(Game* game) {
 	for (DWORD i = 0; i < game->rows; i++)
 	{
@@ -204,7 +238,7 @@ int _tmain(int argc, TCHAR** argv) {
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
 
 
-	_tprintf(TEXT("-------------------PIPEGAME---------------\n\n\n"));
+	_tprintf(TEXT("\n-------------------PIPEGAME---------------\n\n"));
 
 
 	if (argc != 4) {
@@ -226,6 +260,9 @@ int _tmain(int argc, TCHAR** argv) {
 	WaitForSingleObject(controlData.hWriteSem, INFINITE);
 	WaitForSingleObject(controlData.hReadSem, INFINITE);
 
+	// Function to start the game
+	startGame(&game);
+
 	// Shows the board for the game
 	showBoard(&game);
 
@@ -236,6 +273,7 @@ int _tmain(int argc, TCHAR** argv) {
 	ReleaseSemaphore(controlData.hWriteSem, lMaximumSem, NULL);
 	ReleaseSemaphore(controlData.hReadSem, lMaximumSem, NULL);
 
+	//Getting input from the user for testing the synchronisms
 	//TCHAR test[BUFFER];
 	//_fgetts(test, BUFFER, stdin);
 
