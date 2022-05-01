@@ -29,12 +29,69 @@ typedef struct _ControlData {
 	HANDLE hReadSem; // Light warns reading 
 }ControlData;
 
-void showBoard(Game* game) {
-	for (DWORD i = 0; i < game->rows; i++)
+
+
+BOOL initMemAndSync(ControlData* p) {
+	BOOL firstProcess = FALSE;
+	_tprintf(TEXT("\n\nConfigs for the game initializing...\n"));
+
+	p->hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, SHM_NAME);
+
+	if (p->hMapFile == NULL) { // Map
+		firstProcess = TRUE;
+		p->hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(Game), SHM_NAME);
+
+		if (p->hMapFile == NULL) {
+			_tprintf(TEXT("\nErro CreateFileMapping (%d)\n"), GetLastError());
+			return FALSE;
+		}
+	}
+
+	p->sharedMem = (Game*)MapViewOfFile(p->hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(Game)); // Shared Memory
+	if (p->sharedMem == NULL) {
+		_tprintf(TEXT("\nError: MapViewOfFile (%d)"), GetLastError());
+		CloseHandle(p->hMapFile);
+		return FALSE;
+	}
+
+	p->hMutex = CreateMutex(NULL, FALSE, MUTEX_NAME);
+	if (p->hMutex == NULL) {
+		_tprintf(TEXT("\nError creating mutex (%d)\n"), GetLastError());
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		return FALSE;
+	}
+
+	DWORD lMaximumSem = 5;
+
+	p->hWriteSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_WRITE_NAME);
+	if (p->hWriteSem == NULL) {
+		_tprintf(TEXT("\nError creating writting semaphore: (%d)\n"), GetLastError());
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		return FALSE;
+	}
+
+	p->hReadSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_READ_NAME);
+	if (p->hReadSem == NULL) {
+		_tprintf(TEXT("\nError creating reading semaphore (%d)\n"), GetLastError());
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+
+void showBoard(ControlData* data) {
+	for (DWORD i = 0; i < data->sharedMem->rows; i++)
 	{
 		_tprintf(TEXT("\n"));
-		for (DWORD j = 0; j < game->columns; j++)
-			_tprintf(TEXT("%c "), game->board[i * game->rows + j]);
+		for (DWORD j = 0; j < data->sharedMem->columns; j++)
+			_tprintf(TEXT("%c "), data->sharedMem->board[i * data->sharedMem->rows + j]);
 	}
 	_tprintf(TEXT("\n"));
 }
@@ -43,12 +100,12 @@ void showBoard(Game* game) {
 
 int _tmain(int argc, TCHAR** argv) {
 #ifdef UNICODE
-	_setmode(_fileno(stdin), _O_WTEXT);
-	_setmode(_fileno(stdout), _O_WTEXT);
-	_setmode(_fileno(stderr), _O_WTEXT);
+	(void)_setmode(_fileno(stdin), _O_WTEXT);
+	(void)_setmode(_fileno(stdout), _O_WTEXT);
+	(void)_setmode(_fileno(stderr), _O_WTEXT);
 #endif
 	ControlData controlData;
-	controlData.sharedMem = (Game*)MapViewOfFile(INVALID_HANDLE_VALUE, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(Game));
-	showBoard(&controlData.sharedMem);
+	initMemAndSync(&controlData);
+	showBoard(&controlData);
 	return 0;
 }

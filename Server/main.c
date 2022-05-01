@@ -13,11 +13,11 @@
 #define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
 
 typedef struct _Game{
-	TCHAR* board;
+	TCHAR board[400];
 	DWORD rows;
 	DWORD columns;
 	DWORD time;
-	TCHAR* pieces;
+	TCHAR pieces[6];
 	BOOL finished;
 }Game;
 
@@ -40,9 +40,9 @@ typedef struct _ControlData {
 }ControlData;
 
 LPVOID WINAPI decreaseTime(LPVOID data) {
-	Game* aux = (Game*)data;
-	while (!aux->finished) {
-		aux->time--;
+	ControlData* aux = (ControlData*)data;
+	while (!aux->sharedMem->finished) {
+		aux->sharedMem->time--;
 		Sleep(1000);
 	}
 	ExitThread(1);
@@ -52,11 +52,6 @@ BOOL initMemAndSync(ControlData* p){
 	BOOL firstProcess = FALSE;
 	_tprintf(TEXT("\n\nConfigs for the game initializing...\n"));
 
-	if (initBoard(p) == -1) {
-		_tprintf(TEXT("\nError initializing the board!\n"));
-		return FALSE;
-	}
-
 	p->hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, SHM_NAME);
 
 	if (p->hMapFile == NULL) { // Map
@@ -65,8 +60,6 @@ BOOL initMemAndSync(ControlData* p){
 
 		if (p->hMapFile == NULL) {
 			_tprintf(TEXT("\nErro CreateFileMapping (%d)\n"), GetLastError());
-			free(p->sharedMem->pieces);
-			free(p->sharedMem->board);
 			return FALSE;
 		}
 	}
@@ -74,8 +67,6 @@ BOOL initMemAndSync(ControlData* p){
 	p->sharedMem = (Game*)MapViewOfFile(p->hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(Game)); // Shared Memory
 	if (p->sharedMem == NULL) {
 		_tprintf(TEXT("\nError: MapViewOfFile (%d)"), GetLastError());
-		free(p->sharedMem->pieces);
-		free(p->sharedMem->board);
 		CloseHandle(p->hMapFile);
 		return FALSE;
 	}
@@ -83,20 +74,16 @@ BOOL initMemAndSync(ControlData* p){
 	p->hMutex = CreateMutex(NULL, FALSE, MUTEX_NAME);
 	if (p->hMutex == NULL) {
 		_tprintf(TEXT("\nError creating mutex (%d)\n"), GetLastError());
-		free(p->sharedMem->board);
-		free(p->sharedMem->pieces);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		return FALSE;
 	}
 
-	DWORD lMaximumSem = 1;
+	DWORD lMaximumSem = 5;
 
 	p->hWriteSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_WRITE_NAME);
 	if(p->hWriteSem == NULL){
 		_tprintf(TEXT("\nError creating writting semaphore: (%d)\n"), GetLastError());
-		free(p->sharedMem->board);
-		free(p->sharedMem->pieces);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		CloseHandle(p->hMutex);
@@ -105,8 +92,6 @@ BOOL initMemAndSync(ControlData* p){
 
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		_tprintf(TEXT("\nCant run two servers at once!\n"));
-		free(p->sharedMem->pieces);
-		free(p->sharedMem->board);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		CloseHandle(p->hMutex);
@@ -118,8 +103,6 @@ BOOL initMemAndSync(ControlData* p){
 	p->hReadSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_READ_NAME);
 	if (p->hReadSem == NULL) {
 		_tprintf(TEXT("\nError creating reading semaphore (%d)\n"), GetLastError());
-		free(p->sharedMem->board);
-		free(p->sharedMem->pieces);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		CloseHandle(p->hMutex);
@@ -129,8 +112,6 @@ BOOL initMemAndSync(ControlData* p){
 
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		_tprintf(TEXT("\nCant run two servers at once!\n"));
-		free(p->sharedMem->board);
-		free(p->sharedMem->pieces);
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		CloseHandle(p->hMutex);
@@ -149,8 +130,8 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 		if (RegCreateKeyEx(HKEY_CURRENT_USER, registry->keyCompletePath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &registry->key, &registry->dposition) == ERROR_SUCCESS)
 		{
 			_tprintf_s(TEXT("\nI just created the key for the PipeGame!"));
-			DWORD rows = 10;
-			DWORD columns = 10;
+			DWORD rows = 19;
+			DWORD columns = 19;
 			DWORD time = 30;
 
 			// Creates chain of values
@@ -181,67 +162,57 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 
 int initBoard(ControlData* data) {
 
-	data->sharedMem->board = (TCHAR*)malloc((data->sharedMem->rows * data->sharedMem->columns) * sizeof(TCHAR));
-
-	if (data->sharedMem->board != NULL) {
-		_tprintf(TEXT("\nBoard loaded!\n"));
-	}else {
-		_tprintf(TEXT("\nMemory alocation wasnt done successfully\n"));
-		return -1;
-	}
-
 	for (DWORD i = 0; i < data->sharedMem->rows * data->sharedMem->columns; i++) {
-		_tcscpy_s(&data->sharedMem->board[i], sizeof(TCHAR), TEXT("━"));
+		_tcscpy_s(&data->sharedMem->board[i], sizeof(TCHAR), TEXT("_"));
 	}
 
 	return 1;
 }
 
-void startGame(Game* game) {
-	int randomRow = -1;
-	int randomColumn = -1;
+void startGame(ControlData* data) {
+	DWORD randomRow = -1;
+	DWORD randomColumn = -1;
 	int number;
-	srand(time(0));
+	srand((unsigned int)time(0));
 	int quadrante = 0;
-	game->finished = FALSE;
+	data->sharedMem->finished = FALSE;
 
-	game->pieces = (TCHAR*)malloc(6 * sizeof(TCHAR));
-	_tcscpy_s(&game->pieces[0], sizeof(TCHAR), TEXT("━"));
-	_tcscpy_s(&game->pieces[1], sizeof(TCHAR), TEXT("┃"));
-	_tcscpy_s(&game->pieces[2], sizeof(TCHAR), TEXT("┏"));
-	_tcscpy_s(&game->pieces[3], sizeof(TCHAR), TEXT("┓"));
-	_tcscpy_s(&game->pieces[4], sizeof(TCHAR), TEXT("┛"));
-	_tcscpy_s(&game->pieces[5], sizeof(TCHAR), TEXT("┗"));
+	_tcscpy_s(&data->sharedMem->pieces[0], sizeof(TCHAR), TEXT("━"));
+	_tcscpy_s(&data->sharedMem->pieces[1], sizeof(TCHAR), TEXT("┃"));
+	_tcscpy_s(&data->sharedMem->pieces[2], sizeof(TCHAR), TEXT("┏"));
+	_tcscpy_s(&data->sharedMem->pieces[3], sizeof(TCHAR), TEXT("┓"));
+	_tcscpy_s(&data->sharedMem->pieces[4], sizeof(TCHAR), TEXT("┛"));
+	_tcscpy_s(&data->sharedMem->pieces[5], sizeof(TCHAR), TEXT("┗"));
 
 	number = rand() % 2 + 1;
 
 	if (number == 1) {
-		randomRow = rand() % game->rows;
+		randomRow = rand() % data->sharedMem->rows;
 
 		number = rand() % 2 + 1;
 
 		if (number == 1)
 			randomColumn = 0;
 		else
-			randomColumn = game->columns - 1;
+			randomColumn = data->sharedMem->columns - 1;
 	}
 	else {
-		randomColumn = rand() % game->columns;
+		randomColumn = rand() % data->sharedMem->columns;
 
 		number = rand() % 2 + 1;
 
 		if (number == 1)
 			randomRow = 0;
 		else
-			randomRow = game->rows - 1;
+			randomRow = data->sharedMem->rows - 1;
 	}
-	game->board[randomRow * game->rows + randomColumn] = 'B';
+	data->sharedMem->board[randomRow * data->sharedMem->rows + randomColumn] = 'B';
 
-	if (randomRow < game->rows / 2 && randomColumn < game->columns / 2)
+	if (randomRow < data->sharedMem->rows / 2 && randomColumn < data->sharedMem->columns / 2)
 		quadrante = 1;
-	else if (randomRow < game->rows / 2 && randomColumn >= game->columns / 2)
+	else if (randomRow < data->sharedMem->rows / 2 && randomColumn >= data->sharedMem->columns / 2)
 		quadrante = 2;
-	else if (randomRow >= game->rows / 2 && randomColumn < game->columns / 2)
+	else if (randomRow >= data->sharedMem->rows / 2 && randomColumn < data->sharedMem->columns / 2)
 		quadrante = 3;
 	else
 		quadrante = 4;
@@ -249,56 +220,56 @@ void startGame(Game* game) {
 	if (quadrante == 1) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRow = (rand() % (game->rows/2) + (game->rows/2));
-			randomColumn = game->columns - 1;
+			randomRow = (rand() % (data->sharedMem->rows /2) + (data->sharedMem->rows /2));
+			randomColumn = data->sharedMem->columns - 1;
 		}
 		else {
-			randomColumn = (rand() % (game->columns/2) + (game->columns/2));
-			randomRow = game->rows - 1;
+			randomColumn = (rand() % (data->sharedMem->columns/2) + (data->sharedMem->columns/2));
+			randomRow = data->sharedMem->rows - 1;
 		}
-		game->board[randomRow * game->rows + randomColumn] = 'E';
+		data->sharedMem->board[randomRow * data->sharedMem->rows + randomColumn] = 'E';
 	}else if (quadrante == 2) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRow = (rand() % (game->rows / 2) + (game->rows / 2));
+			randomRow = (rand() % (data->sharedMem->rows / 2) + (data->sharedMem->rows / 2));
 			randomColumn = 0;
 		}
 		else {
-			randomColumn = rand() % (game->columns / 2);
-			randomRow = game->rows-1;
+			randomColumn = rand() % (data->sharedMem->columns / 2);
+			randomRow = data->sharedMem->rows-1;
 		}
-		game->board[randomRow * game->rows + randomColumn] = 'E';
+		data->sharedMem->board[randomRow * data->sharedMem->rows + randomColumn] = 'E';
 	}else if (quadrante == 3) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRow = rand() % (game->rows / 2);
-			randomColumn = game->columns-1;
+			randomRow = rand() % (data->sharedMem->rows / 2);
+			randomColumn = data->sharedMem->columns-1;
 		}
 		else {
-			randomColumn = (rand() % (game->columns / 2) + (game->columns/2));
+			randomColumn = (rand() % (data->sharedMem->columns / 2) + (data->sharedMem->columns/2));
 			randomRow = 0;
 		}
-		game->board[randomRow * game->rows + randomColumn] = 'E';
+		data->sharedMem->board[randomRow * data->sharedMem->rows + randomColumn] = 'E';
 	}else if (quadrante == 4) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRow = rand() % (game->rows / 2);
+			randomRow = rand() % (data->sharedMem->rows/2);
 			randomColumn = 0;
 		}
 		else {
-			randomColumn = rand() % (game->columns / 2);
+			randomColumn = rand() % (data->sharedMem->columns / 2);
 			randomRow = 0;
 		}
-		game->board[randomRow * game->rows + randomColumn] = 'E';
+		data->sharedMem->board[randomRow * data->sharedMem->rows + randomColumn] = 'E';
 	}
 }
 
-void showBoard(Game* game) {
-	for (DWORD i = 0; i < game->rows; i++)
+void showBoard(ControlData* data) {
+	for (DWORD i = 0; i < data->sharedMem->rows; i++)
 	{
 		_tprintf(TEXT("\n"));
-		for (DWORD j = 0; j < game->columns; j++)
-			_tprintf(TEXT("%c "), game->board[i * game->rows + j]);
+		for (DWORD j = 0; j < data->sharedMem->columns; j++)
+			_tprintf(TEXT("%c "), data->sharedMem->board[i * data->sharedMem->rows + j]);
 	}
 	_tprintf(TEXT("\n"));
 }
@@ -307,24 +278,26 @@ void showBoard(Game* game) {
 int _tmain(int argc, TCHAR** argv) {
 // Default code for windows32 API
 #ifdef UNICODE
-	_setmode(_fileno(stdin), _O_WTEXT);
-	_setmode(_fileno(stdout), _O_WTEXT);
-	_setmode(_fileno(stderr), _O_WTEXT);
+	(void)_setmode(_fileno(stdin), _O_WTEXT);
+	(void)_setmode(_fileno(stdout), _O_WTEXT);
+	(void)_setmode(_fileno(stderr), _O_WTEXT);
 #endif
 
 // Variables
-	Game game;
 	Registry registry;
 	ControlData controlData;
 	DWORD lMaximumSem = 1;
-	controlData.sharedMem = &game;
+	//controlData.sharedMem = &game;
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
-	controlData.hThreadTime = CreateThread(NULL, 0, &decreaseTime, &controlData.sharedMem, CREATE_SUSPENDED, NULL);
-	TCHAR option[BUFFER];
+	
+	TCHAR option[BUFFER] = TEXT(" ");
 
 
 	_tprintf(TEXT("\n-------------------PIPEGAME---------------\n\n"));
-
+	if (!initMemAndSync(&controlData)) {
+		_tprintf(_T("Error creating/opening shared memory and synchronization mechanisms\n"));
+		exit(1);
+	}
 
 	if (argc != 4) {
 		if (!configGame(&registry, &controlData)) {
@@ -332,13 +305,15 @@ int _tmain(int argc, TCHAR** argv) {
 			exit(1);
 		}
 	}else {
-		game.rows = _ttoi(argv[1]);
-		game.columns =  _ttoi(argv[2]);
-		game.time =  _ttoi(argv[3]);
+		controlData.sharedMem->rows = _ttoi(argv[1]);
+		controlData.sharedMem->columns =  _ttoi(argv[2]);
+		controlData.sharedMem->time =  _ttoi(argv[3]);
 	}
 
-	if (!initMemAndSync(&controlData)) {
-		_tprintf(_T("Error creating/opening shared memory and synchronization mechanisms\n"));
+	initBoard(&controlData);
+	controlData.hThreadTime = CreateThread(NULL, 0, &decreaseTime, &controlData, CREATE_SUSPENDED, NULL);
+	if (controlData.hThreadTime == NULL) {
+		_tprintf(TEXT("\nCouldnt create the timeThread!\n"));
 		exit(1);
 	}
 
@@ -347,11 +322,11 @@ int _tmain(int argc, TCHAR** argv) {
 	WaitForSingleObject(controlData.hReadSem, INFINITE);
 
 	// Function to start the game
-	startGame(&game);
+	startGame(&controlData);
 	ResumeThread(controlData.hThreadTime);
 	
 	// Shows the board for the game
-	showBoard(&game);
+	showBoard(&controlData);
 
 	while (_ttoi(option) != 4) {
 		_tprintf(TEXT("\n1 - List Players(in development)"));
@@ -364,7 +339,7 @@ int _tmain(int argc, TCHAR** argv) {
 		switch (_ttoi(option)) {
 		case 4:
 			_tprintf(TEXT("\nClosing the application...\n"));
-			game.finished = TRUE;
+			controlData.sharedMem->finished = TRUE;
 			break;
 		default: 
 			_tprintf(TEXT("\nCouldn´t recognize the command!\n"));
@@ -373,15 +348,7 @@ int _tmain(int argc, TCHAR** argv) {
 	}
 
 	// Waits for the thread to end
-	//WaitForSingleObject(controlData.hThreadTime, INFINITE);
-
-	// Frees the memory of the board
-	free(controlData.sharedMem->board);
-	free(controlData.sharedMem->pieces);
-
-	// Release the semaphores
-	ReleaseSemaphore(controlData.hWriteSem, lMaximumSem, NULL);
-	ReleaseSemaphore(controlData.hReadSem, lMaximumSem, NULL);
+	WaitForSingleObject(controlData.hThreadTime, INFINITE);
 
 	// Closing of all the handles
 	RegCloseKey(registry.key);
@@ -390,5 +357,6 @@ int _tmain(int argc, TCHAR** argv) {
 	CloseHandle(controlData.hMutex);
 	CloseHandle(controlData.hWriteSem);
 	CloseHandle(controlData.hReadSem);
+
 	return 0;
 }
