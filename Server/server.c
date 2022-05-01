@@ -49,6 +49,36 @@ typedef struct _ControlData {
 	Game* game;
 }ControlData;
 
+void showBoard(ControlData* data) {
+	for (DWORD i = 0; i < data->sharedMem->game->rows; i++)
+	{
+		_tprintf(TEXT("\n"));
+		for (DWORD j = 0; j < data->sharedMem->game->columns; j++)
+			_tprintf(TEXT("%c "), data->sharedMem->game->board[i * data->sharedMem->game->rows + j]);
+	}
+	_tprintf(TEXT("\n"));
+}
+
+DWORD WINAPI sendData(LPVOID p) {
+	ControlData* data = (ControlData*)p;
+	int i = 0;
+
+	while (1) {
+		if (data->shutdown == 1)
+			return 0;
+		WaitForSingleObject(data->hWriteSem, INFINITE);
+		WaitForSingleObject(data->hMutex, INFINITE);
+		//showBoard(data);
+		*data->sharedMem->game[i].board = *data->game->board;
+		i++;
+		if (i == BUFFERSIZE)
+			i = 0;
+		ReleaseMutex(data->hMutex);
+		ReleaseSemaphore(data->hReadSem, 1, NULL);
+	}
+}
+
+
 BOOL initMemAndSync(ControlData* p){
 	BOOL firstProcess = FALSE;
 	_tprintf(TEXT("\n\nConfigs for the game initializing...\n"));
@@ -87,9 +117,7 @@ BOOL initMemAndSync(ControlData* p){
 		return FALSE;
 	}
 
-	DWORD lMaximumSem = 5;
-
-	p->hWriteSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_WRITE_NAME);
+	p->hWriteSem = CreateSemaphore(NULL, BUFFERSIZE, BUFFERSIZE, SEM_WRITE_NAME);
 	if(p->hWriteSem == NULL){
 		_tprintf(TEXT("\nError creating writting semaphore: (%d).\n"), GetLastError());
 		UnmapViewOfFile(p->sharedMem);
@@ -98,17 +126,7 @@ BOOL initMemAndSync(ControlData* p){
 		return FALSE;
 	}
 
-	if (GetLastError() == ERROR_ALREADY_EXISTS) {
-		_tprintf(TEXT("\nCant run two servers at once.\n"));
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
-		CloseHandle(p->hMutex);
-		CloseHandle(p->hWriteSem);
-		ExitProcess(1);
-	}
-
-
-	p->hReadSem = CreateSemaphore(NULL, lMaximumSem, lMaximumSem, SEM_READ_NAME);
+	p->hReadSem = CreateSemaphore(NULL, BUFFERSIZE, BUFFERSIZE, SEM_READ_NAME);
 	if (p->hReadSem == NULL) {
 		_tprintf(TEXT("\nError creating reading semaphore (%d).\n"), GetLastError());
 		UnmapViewOfFile(p->sharedMem);
@@ -118,15 +136,7 @@ BOOL initMemAndSync(ControlData* p){
 		return FALSE;
 	}
 
-	if (GetLastError() == ERROR_ALREADY_EXISTS) {
-		_tprintf(TEXT("\nCant run two servers at once.\n"));
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
-		CloseHandle(p->hMutex);
-		CloseHandle(p->hWriteSem);
-		CloseHandle(p->hReadSem);
-		ExitProcess(1);
-	}
+	
 	return TRUE;
 }
 
@@ -272,15 +282,7 @@ void startGame(ControlData* data) {
 	}
 }
 
-void showBoard(ControlData* data) {
-	for (DWORD i = 0; i < data->sharedMem->game->rows; i++)
-	{
-		_tprintf(TEXT("\n"));
-		for (DWORD j = 0; j < data->sharedMem->game->columns; j++)
-			_tprintf(TEXT("%c "), data->sharedMem->game->board[i * data->sharedMem->game->rows + j]);
-	}
-	_tprintf(TEXT("\n"));
-}
+
 
 
 int _tmain(int argc, TCHAR** argv) {
@@ -293,10 +295,12 @@ int _tmain(int argc, TCHAR** argv) {
 
 // Variables
 	Registry registry;
+	Game game;
 	ControlData controlData;
-	DWORD lMaximumSem = 1;
+	controlData.game = &game;
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
 	TCHAR option[BUFFER] = TEXT(" ");
+	HANDLE hThreadSendDataToMonitor;
 	controlData.shutdown = 0; // trinco 
 	controlData.count = 0; // numero de itens
 
@@ -318,19 +322,20 @@ int _tmain(int argc, TCHAR** argv) {
 		controlData.sharedMem->game->time =  _ttoi(argv[3]);
 	}
 
-	initBoard(&controlData);
-	if (controlData.hThreadTime == NULL) {
-		_tprintf(TEXT("\nCouldnt create the timeThread.\n"));
-		exit(1);
-	}
-
-	// Waits for the semaphores
-	WaitForSingleObject(controlData.hWriteSem, INFINITE);
-	WaitForSingleObject(controlData.hReadSem, INFINITE);
-
+	initBoard(&controlData);	
+	
+	
 	// Function to start the game
 	startGame(&controlData);
-
+	hThreadSendDataToMonitor = CreateThread(NULL, 0, sendData, &controlData, 0, NULL);
+	
+	if (hThreadSendDataToMonitor == NULL) {
+		_tprintf(TEXT("\nCouldnt create thread to send data to the monitor.\n"));
+		exit(1);
+	}
+	
+	
+	
 	while (_ttoi(option) != 4) {
 		_tprintf(TEXT("\n1 - List Players(in development)."));
 		_tprintf(TEXT("\n2 - Suspend Game(in development)."));
@@ -342,13 +347,16 @@ int _tmain(int argc, TCHAR** argv) {
 		switch (_ttoi(option)) {
 		case 4:
 			_tprintf(TEXT("\nClosing the application...\n"));
+			controlData.shutdown = 1;
 			break;
 		default: 
 			_tprintf(TEXT("\nCouldn´t recognize the command.\n"));
 			break;
 		}
 	}
-
+	
+	
+	showBoard(&controlData);
 	// Closing of all the handles
 	RegCloseKey(registry.key);
 	UnmapViewOfFile(controlData.sharedMem);

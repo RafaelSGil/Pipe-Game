@@ -1,2 +1,4 @@
-﻿  main.c
+﻿  monitor.c
+C:\Users\Hugo\Desktop\Pipe-Game\Monitor\monitor.c(74,54): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'TCHAR *'
+C:\Users\Hugo\Desktop\Pipe-Game\Monitor\monitor.c(65,7): warning C4101: 'aux': variável local não referenciada
   Monitor.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Monitor.exe
