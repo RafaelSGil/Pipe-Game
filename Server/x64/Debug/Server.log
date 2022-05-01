@@ -1,5 +1,3 @@
-﻿  main.c
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(176,26): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(314,63): warning C4047: 'função': 'LPTHREAD_START_ROUTINE' difere em níveis de indireção de 'LPVOID (__cdecl *)(LPVOID)'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(314,50): warning C4024: 'CreateThread': tipos diferentes para parâmetro formal e real 3
+﻿  server.c
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(185,26): warning C4013: 'time' indefinido; assumindo extern retornando int
   Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
