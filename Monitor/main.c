@@ -19,13 +19,6 @@ typedef struct _Game {
 	DWORD time;
 }Game;
 
-typedef struct _Registry {
-	HKEY key;
-	TCHAR keyCompletePath[BUFFER];
-	DWORD dposition;
-	TCHAR name[BUFFER];
-}Registry;
-
 typedef struct _ControlData {
 	unsigned int shutdown; // Release
 	unsigned int id; // Id from the process
@@ -36,10 +29,26 @@ typedef struct _ControlData {
 	HANDLE hReadSem; // Light warns reading 
 }ControlData;
 
+void showBoard(Game* game) {
+	for (DWORD i = 0; i < game->rows; i++)
+	{
+		_tprintf(TEXT("\n"));
+		for (DWORD j = 0; j < game->columns; j++)
+			_tprintf(TEXT("%c "), game->board[i * game->rows + j]);
+	}
+	_tprintf(TEXT("\n"));
+}
+
+
 
 int _tmain(int argc, TCHAR** argv) {
-
-	_tprintf(TEXT("IM THE MONITOR"));
-
+#ifdef UNICODE
+	_setmode(_fileno(stdin), _O_WTEXT);
+	_setmode(_fileno(stdout), _O_WTEXT);
+	_setmode(_fileno(stderr), _O_WTEXT);
+#endif
+	ControlData controlData;
+	controlData.sharedMem = (Game*)MapViewOfFile(INVALID_HANDLE_VALUE, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(Game));
+	showBoard(&controlData.sharedMem);
 	return 0;
 }

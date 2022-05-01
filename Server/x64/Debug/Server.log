@@ -1,16 +1,12 @@
 ﻿  main.c
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(52,15): warning C4013: 'initBoard' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(139,54): warning C4047: 'função': 'LPTHREAD_START_ROUTINE' difere em níveis de indireção de 'LPVOID (__cdecl *)(LPVOID)'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(139,41): warning C4024: 'CreateThread': tipos diferentes para parâmetro formal e real 3
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(160,137): warning C4047: 'função': 'PHKEY' difere em níveis de indireção de 'HKEY'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(160,132): warning C4024: 'RegCreateKeyExW': tipos diferentes para parâmetro formal e real 8
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(160,158): warning C4047: 'função': 'LPDWORD' difere em níveis de indireção de 'DWORD'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(160,147): warning C4024: 'RegCreateKeyExW': tipos diferentes para parâmetro formal e real 9
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(213,12): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(249,16): warning C4018: '<': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(249,49): warning C4018: '<': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(251,21): warning C4018: '<': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(251,54): warning C4018: '>=': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(253,21): warning C4018: '>=': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(253,55): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(55,15): warning C4013: 'initBoard' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(204,12): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(240,16): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(240,49): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(242,21): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(242,54): warning C4018: '>=': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(244,21): warning C4018: '>=': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(244,55): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(322,63): warning C4047: 'função': 'LPTHREAD_START_ROUTINE' difere em níveis de indireção de 'LPVOID (__cdecl *)(LPVOID)'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\main.c(322,50): warning C4024: 'CreateThread': tipos diferentes para parâmetro formal e real 3
   Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe

@@ -11,13 +11,14 @@
 #define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
 #define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
 #define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
+
 typedef struct _Game{
 	TCHAR* board;
 	DWORD rows;
 	DWORD columns;
 	DWORD time;
 	TCHAR* pieces;
-	BOOL win;
+	BOOL finished;
 }Game;
 
 typedef struct _Registry{
@@ -40,15 +41,17 @@ typedef struct _ControlData {
 
 LPVOID WINAPI decreaseTime(LPVOID data) {
 	Game* aux = (Game*)data;
-	while (TRUE) {
+	while (!aux->finished) {
 		aux->time--;
 		Sleep(1000);
 	}
+	ExitThread(1);
 }
 
 BOOL initMemAndSync(ControlData* p){
 	BOOL firstProcess = FALSE;
-	_tprintf(TEXT("\nConfigs for the game initializing...\n"));
+	_tprintf(TEXT("\n\nConfigs for the game initializing...\n"));
+
 	if (initBoard(p) == -1) {
 		_tprintf(TEXT("\nError initializing the board!\n"));
 		return FALSE;
@@ -135,20 +138,6 @@ BOOL initMemAndSync(ControlData* p){
 		CloseHandle(p->hReadSem);
 		ExitProcess(1);
 	}
-
-	p->hThreadTime = CreateThread(NULL, 0, &decreaseTime, p->sharedMem, CREATE_SUSPENDED, NULL);
-	if (p->hThreadTime == NULL) {
-		_tprintf(TEXT("\nError creating thread (%d)\n"), GetLastError());
-		free(p->sharedMem->board);
-		free(p->sharedMem->pieces);
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
-		CloseHandle(p->hMutex);
-		CloseHandle(p->hWriteSem);
-		CloseHandle(p->hReadSem);
-		return FALSE;
-	}
-
 	return TRUE;
 }
 
@@ -157,7 +146,7 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 	// Verifies if the key exists
 	if (RegOpenKeyEx(HKEY_CURRENT_USER, registry->keyCompletePath, 0, KEY_ALL_ACCESS, &registry->key) != ERROR_SUCCESS) {
 		// If doesnt exists creates the key
-		if (RegCreateKeyEx(HKEY_CURRENT_USER, registry->keyCompletePath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, registry->key, registry->dposition) == ERROR_SUCCESS)
+		if (RegCreateKeyEx(HKEY_CURRENT_USER, registry->keyCompletePath, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &registry->key, &registry->dposition) == ERROR_SUCCESS)
 		{
 			_tprintf_s(TEXT("\nI just created the key for the PipeGame!"));
 			DWORD rows = 10;
@@ -180,6 +169,8 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 	long rowsRead = RegQueryValueEx(registry->key, TEXT("Rows"), NULL, NULL, (LPBYTE)&controlData->sharedMem->rows, &sizeDword);
 	long columnsRead = RegQueryValueEx(registry->key, TEXT("Columns"), NULL, NULL, (LPBYTE)&controlData->sharedMem->columns, &sizeDword);
 	long timeRead = RegQueryValueEx(registry->key, TEXT("Time"), NULL, NULL, (LPBYTE)&controlData->sharedMem->time, &sizeDword);
+
+	
 
 	if (rowsRead != ERROR_SUCCESS || columnsRead != ERROR_SUCCESS || timeRead != ERROR_SUCCESS) {
 		_tprintf_s(TEXT("\nCouldnt read the values for the pipe game!"));
@@ -212,7 +203,7 @@ void startGame(Game* game) {
 	int number;
 	srand(time(0));
 	int quadrante = 0;
-	game->win = FALSE;
+	game->finished = FALSE;
 
 	game->pieces = (TCHAR*)malloc(6 * sizeof(TCHAR));
 	_tcscpy_s(&game->pieces[0], sizeof(TCHAR), TEXT("━"));
@@ -328,6 +319,7 @@ int _tmain(int argc, TCHAR** argv) {
 	DWORD lMaximumSem = 1;
 	controlData.sharedMem = &game;
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
+	controlData.hThreadTime = CreateThread(NULL, 0, &decreaseTime, &controlData.sharedMem, CREATE_SUSPENDED, NULL);
 	TCHAR option[BUFFER];
 
 
@@ -336,7 +328,7 @@ int _tmain(int argc, TCHAR** argv) {
 
 	if (argc != 4) {
 		if (!configGame(&registry, &controlData)) {
-			_tprintf(_T("Error during configuration of the game\n"));
+			_tprintf(_T("\n\nError during configuration of the game!\n"));
 			exit(1);
 		}
 	}else {
@@ -358,20 +350,30 @@ int _tmain(int argc, TCHAR** argv) {
 	startGame(&game);
 	ResumeThread(controlData.hThreadTime);
 	
-	
 	// Shows the board for the game
 	showBoard(&game);
 
-	while (TRUE) {
+	while (_ttoi(option) != 4) {
 		_tprintf(TEXT("\n1 - List Players(in development)"));
 		_tprintf(TEXT("\n2 - Suspend Game(in development)"));
 		_tprintf(TEXT("\n3 - Resume Game(in development)"));
 		_tprintf(TEXT("\n4 - Quit\n\n\n>"));
 
 		_fgetts(option, BUFFER, stdin);
+
+		switch (_ttoi(option)) {
+		case 4:
+			_tprintf(TEXT("\nClosing the application...\n"));
+			game.finished = TRUE;
+			break;
+		default: 
+			_tprintf(TEXT("\nCouldn´t recognize the command!\n"));
+			break;
+		}
 	}
+
 	// Waits for the thread to end
-	WaitForSingleObject(controlData.hThreadTime, INFINITE);
+	//WaitForSingleObject(controlData.hThreadTime, INFINITE);
 
 	// Frees the memory of the board
 	free(controlData.sharedMem->board);
