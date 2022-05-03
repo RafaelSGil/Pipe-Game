@@ -32,7 +32,7 @@ typedef struct _Registry{
 
 typedef struct _SharedMem {
 	Game game[BUFFERSIZE];
-	TCHAR* commandMonitor;
+	DWORD commandMonitor;
 }SharedMem;
 
 typedef struct _ControlData {
@@ -70,17 +70,26 @@ DWORD WINAPI sendData(LPVOID p) {
 }
 
 
-DWORD WINAPI receiveCommnadsMonito(LPVOID p) {
+DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 	ControlData* data = (ControlData*)p;
-	TCHAR* command = NULL;
+	DWORD command;
 
 	do {
 		WaitForSingleObject(data->commandEvent, INFINITE);
 		WaitForSingleObject(data->commandMutex, INFINITE);
-		CopyMemory(command, &(data->sharedMem->commandMonitor), INFINITE);
+		CopyMemory(&command, &(data->sharedMem->commandMonitor), sizeof(DWORD));
 		ReleaseMutex(data->commandMutex);
 
-		_tprintf(TEXT("%s"), command);
+		if (command == 1) {
+			_tprintf(TEXT("faucet"));
+		}
+		if (command == 2) {
+			_tprintf(TEXT("insert"));
+		}
+		if (command == 3) {
+			_tprintf(TEXT("random"));
+		}
+		Sleep(1000);
 	} while (data->shutdown != 1);
 
 }
@@ -322,6 +331,7 @@ int _tmain(int argc, TCHAR** argv) {
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
 	TCHAR option[BUFFER] = TEXT(" ");
 	HANDLE hThreadSendDataToMonitor;
+	HANDLE receiveCommandsMonitorThread;
 	controlData.shutdown = 0; // trinco 
 	controlData.count = 0; // numero de itens
 
@@ -355,6 +365,12 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 	
+	receiveCommandsMonitorThread = CreateThread(NULL, 0, receiveCommnadsMonitor, &controlData, 0, NULL);
+	if (receiveCommandsMonitorThread == NULL) {
+		_tprintf(TEXT("\nCouldn't create thread to receive commands from monitor.\n"));
+		exit(1);
+	}
+
 	while (_ttoi(option) != 4) {
 		_tprintf(TEXT("\n1 - List Players(in development)."));
 		_tprintf(TEXT("\n2 - Suspend Game(in development)."));

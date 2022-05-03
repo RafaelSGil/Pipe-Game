@@ -32,7 +32,7 @@ typedef struct _Registry {
 
 typedef struct _SharedMem {
 	Game game[BUFFERSIZE];
-	TCHAR* commandMonitor;
+	DWORD commandMonitor;
 }SharedMem;
 
 typedef struct _ControlData {
@@ -84,27 +84,35 @@ DWORD WINAPI receiveData(LPVOID p) {
 	}
 }
 
+void sendCommand(ControlData* data, DWORD command) {
+	WaitForSingleObject(data->commandMutex, INFINITE);
+	CopyMemory(&(data->sharedMem->commandMonitor), &command, sizeof(DWORD));
+	ReleaseMutex(data->commandMutex);
+	SetEvent(data->commandEvent);
+	Sleep(500);
+	ResetEvent(data->commandEvent);
+}
+
 DWORD WINAPI executeCommands(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 	TCHAR option[BUFFER] = TEXT(" ");
+	DWORD command;
 
 
 	do {
 		_getts_s(option, _countof(option));
+
 		if (_tcscmp(option, TEXT("show")) == 0)
 			showBoard(data);
 		if (_tcscmp(option, TEXT("faucet")) == 0) {
-			WaitForSingleObject(data->commandMutex, INFINITE);
-			CopyMemory(&(data->sharedMem->commandMonitor), &option, sizeof(TCHAR*));
-			ReleaseMutex(data->commandMutex);
-			SetEvent(data->commandEvent);
-			Sleep(500);
-			ResetEvent(data->commandEvent);
+			sendCommand(data, 1);
 		}
-		if (_tcscmp(option, TEXT("insert")) == 0)
-			_tprintf(TEXT("Inserting walls"));
-		if (_tcscmp(option, TEXT("random")) == 0)
-			_tprintf(TEXT("Deactivating random piece"));
+		if (_tcscmp(option, TEXT("insert")) == 0) {
+			sendCommand(data, 2);
+		}
+		if (_tcscmp(option, TEXT("random")) == 0) {
+			sendCommand(data, 3);
+		}
 	} while (_tcscmp(option, TEXT("exit")) != 0);
 
 	data->shutdown = 1;

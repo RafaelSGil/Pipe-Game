@@ -1,5 +1,6 @@
 ﻿  monitor.c
 C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Monitor\monitor.c(69,7): warning C4101: 'aux': variável local não referenciada
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Monitor\monitor.c(177,44): warning C4133: 'função': tipos incompatíveis - de 'char [30]' para 'const wchar_t *const '
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Monitor\monitor.c(111): warning C4716: 'executeCommands': deve retornar um valor
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Monitor\monitor.c(99,8): warning C4101: 'command': variável local não referenciada
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Monitor\monitor.c(185,44): warning C4133: 'função': tipos incompatíveis - de 'char [30]' para 'const wchar_t *const '
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Monitor\monitor.c(119): warning C4716: 'executeCommands': deve retornar um valor
   Monitor.vcxproj -> C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Pipe Game\x64\Debug\Monitor.exe
