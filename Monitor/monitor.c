@@ -29,10 +29,6 @@ typedef struct _Registry {
 }Registry;
 
 typedef struct _SharedMem {
-	unsigned int p; // contador partilhado com o numero de produtores
-	unsigned int c; // contador partilhador com o numero de consumidores
-	unsigned int wP; // posição do buffer circular para a escrita
-	unsigned int rP; // posição do buffer circular para a leitura
 	Game game[BUFFERSIZE];
 }SharedMem;
 
@@ -50,13 +46,16 @@ typedef struct _ControlData {
 }ControlData;
 
 void showBoard(ControlData* data) {
-	for (DWORD i = 0; i < data->sharedMem->game->rows; i++)
+	WaitForSingleObject(data->hMutex, INFINITE);
+	for (DWORD i = 0; i < data->game->rows; i++)
 	{
+		
 		_tprintf(TEXT("\n"));
-		for (DWORD j = 0; j < data->sharedMem->game->columns; j++)
-			_tprintf(TEXT("%c "), data->sharedMem->game->board[i * data->sharedMem->game->rows + j]);
+		for (DWORD j = 0; j < data->game->columns; j++)
+			_tprintf(TEXT("%c "), data->game->board[i * data->game->rows + j]);
 	}
 	_tprintf(TEXT("\n"));
+	ReleaseMutex(data->hMutex);
 }
 
 
@@ -68,12 +67,9 @@ DWORD WINAPI receiveData(LPVOID p) {
 	while (1) {
 		if (data->shutdown == 1)
 			return 0;
-
 		WaitForSingleObject(data->hReadSem, INFINITE);
 		WaitForSingleObject(data->hMutex, INFINITE);
-		*data->game->board = data->sharedMem->game[i].board;
-		data->game->rows = data->sharedMem->game[i].rows;
-		data->game->columns = data->sharedMem->game[i].columns;
+		CopyMemory(data->game, &(data->sharedMem->game[i]), sizeof(Game));
 		i++;
 		if (i == BUFFERSIZE)
 			i = 0;
@@ -105,13 +101,6 @@ BOOL initMemAndSync(ControlData* p) {
 		_tprintf(TEXT("\nError: MapViewOfFile (%d)."), GetLastError());
 		CloseHandle(p->hMapFile);
 		return FALSE;
-	}
-
-	if (firstProcess) {
-		p->sharedMem->c = 0;
-		p->sharedMem->p = 0;
-		p->sharedMem->rP = 0;
-		p->sharedMem->wP = 0;
 	}
 
 	p->hMutex = CreateMutex(NULL, FALSE, MUTEX_NAME);
@@ -174,7 +163,12 @@ int _tmain(int argc, TCHAR** argv) {
 	}
 
 	_tprintf(TEXT("Type in 'exit' to leave.\n"));
-	do { _getts_s(option, _countof(option)); } while (_tcscmp(option, TEXT("exit")) != 0);
+	do {
+		_getts_s(option, _countof(option)); 
+		if (_ttoi(option) == 1)
+			showBoard(&controlData);
+	} 
+	while (_tcscmp(option, TEXT("exit")) != 0);
 	controlData.shutdown = 1;
 	showBoard(&controlData);
 	WaitForSingleObject(hThreadReceiveDataFromServer, INFINITE);
