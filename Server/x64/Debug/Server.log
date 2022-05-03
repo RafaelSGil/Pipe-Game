@@ -1,3 +1,5 @@
 ﻿  server.c
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(174,26): warning C4013: 'time' indefinido; assumindo extern retornando int
-  Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(151,44): warning C4133: 'função': tipos incompatíveis - de 'char [30]' para 'const wchar_t *const '
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(216,26): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(86): warning C4716: 'receiveCommnadsMonito': deve retornar um valor
+  Server.vcxproj -> C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Pipe Game\x64\Debug\Server.exe

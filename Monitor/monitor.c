@@ -11,6 +11,8 @@
 #define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
 #define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
 #define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
+#define EVENT_NAME TEXT("COMMANDEVENT") //Name of the command event
+#define COMMAND_MUTEX_NAME TEXT("COMMANDMUTEX") //Name of the command mutex
 #define BUFFERSIZE 10
 
 typedef struct _Game {
@@ -30,6 +32,7 @@ typedef struct _Registry {
 
 typedef struct _SharedMem {
 	Game game[BUFFERSIZE];
+	TCHAR* commandMonitor;
 }SharedMem;
 
 typedef struct _ControlData {
@@ -42,6 +45,8 @@ typedef struct _ControlData {
 	HANDLE hWriteSem; // Light warns writting
 	HANDLE hReadSem; // Light warns reading 
 	HANDLE hThreadTime;
+	HANDLE commandEvent; //event used to coordinate commands 
+	HANDLE commandMutex; //mutex used to coordinate commands
 	Game* game;
 }ControlData;
 
@@ -77,6 +82,32 @@ DWORD WINAPI receiveData(LPVOID p) {
 		ReleaseSemaphore(data->hWriteSem, 1, NULL);
 
 	}
+}
+
+DWORD WINAPI executeCommands(LPVOID p) {
+	ControlData* data = (ControlData*)p;
+	TCHAR option[BUFFER] = TEXT(" ");
+
+
+	do {
+		_getts_s(option, _countof(option));
+		if (_tcscmp(option, TEXT("show")) == 0)
+			showBoard(data);
+		if (_tcscmp(option, TEXT("faucet")) == 0) {
+			WaitForSingleObject(data->commandMutex, INFINITE);
+			CopyMemory(&(data->sharedMem->commandMonitor), &option, sizeof(TCHAR*));
+			ReleaseMutex(data->commandMutex);
+			SetEvent(data->commandEvent);
+			Sleep(500);
+			ResetEvent(data->commandEvent);
+		}
+		if (_tcscmp(option, TEXT("insert")) == 0)
+			_tprintf(TEXT("Inserting walls"));
+		if (_tcscmp(option, TEXT("random")) == 0)
+			_tprintf(TEXT("Deactivating random piece"));
+	} while (_tcscmp(option, TEXT("exit")) != 0);
+
+	data->shutdown = 1;
 }
 
 
@@ -130,6 +161,29 @@ BOOL initMemAndSync(ControlData* p) {
 		return FALSE;
 	}
 
+	p->commandEvent = CreateEvent(NULL, TRUE, FALSE, EVENT_NAME);
+	if (p->hReadSem == NULL) {
+		_tprintf(TEXT("\nError creating command semaphore (%d).\n"), GetLastError());
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hReadSem);
+		return FALSE;
+	}
+
+	p->commandMutex = CreateMutex(NULL, FALSE, COMMAND_MUTEX_NAME);
+	if (p->commandMutex == NULL) {
+		_tprintf("\nError creating command mutex");
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hReadSem);
+		CloseHandle(p->commandEvent);
+		return FALSE;
+	}
+
 	return TRUE;
 }
 
@@ -146,8 +200,8 @@ int _tmain(int argc, TCHAR** argv) {
 	Game game;
 	ControlData controlData;
 	controlData.game = &game;
-	TCHAR option[BUFFER] = TEXT(" ");
 	HANDLE hThreadReceiveDataFromServer;
+	HANDLE executeCommandsThread;
 	controlData.shutdown = 0;
 	controlData.count = 0;
 
@@ -162,16 +216,16 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 
+	executeCommandsThread = CreateThread(NULL, 0, executeCommands, &controlData, 0, NULL);
+	if (executeCommandsThread == NULL) {
+		_tprintf(TEXT("\nCouldnt create thread to manage commands.\n"));
+		exit(1);
+	}
+
 	_tprintf(TEXT("Type in 'exit' to leave.\n"));
-	do {
-		_getts_s(option, _countof(option)); 
-		if (_ttoi(option) == 1)
-			showBoard(&controlData);
-	} 
-	while (_tcscmp(option, TEXT("exit")) != 0);
-	controlData.shutdown = 1;
-	showBoard(&controlData);
+
 	WaitForSingleObject(hThreadReceiveDataFromServer, INFINITE);
+	WaitForSingleObject(executeCommandsThread, INFINITE);
 
 	// Closing of all the handles
 	UnmapViewOfFile(controlData.sharedMem);

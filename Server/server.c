@@ -11,6 +11,8 @@
 #define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
 #define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
 #define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
+#define EVENT_NAME TEXT("COMMANDEVENT") //Name of the command event
+#define COMMAND_MUTEX_NAME TEXT("COMMANDMUTEX") //Name of the command mutex
 #define BUFFERSIZE 10
 
 typedef struct _Game{
@@ -30,6 +32,7 @@ typedef struct _Registry{
 
 typedef struct _SharedMem {
 	Game game[BUFFERSIZE];
+	TCHAR* commandMonitor;
 }SharedMem;
 
 typedef struct _ControlData {
@@ -42,6 +45,8 @@ typedef struct _ControlData {
 	HANDLE hWriteSem; // Light warns writting
 	HANDLE hReadSem; // Light warns reading 
 	HANDLE hThreadTime;
+	HANDLE commandEvent; //event used to coordinate commands received
+	HANDLE commandMutex; //mutex used to coordinate commands
 	Game* game;
 }ControlData;
 
@@ -65,7 +70,22 @@ DWORD WINAPI sendData(LPVOID p) {
 }
 
 
-BOOL initMemAndSync(ControlData* p){
+DWORD WINAPI receiveCommnadsMonito(LPVOID p) {
+	ControlData* data = (ControlData*)p;
+	TCHAR* command = NULL;
+
+	do {
+		WaitForSingleObject(data->commandEvent, INFINITE);
+		WaitForSingleObject(data->commandMutex, INFINITE);
+		CopyMemory(command, &(data->sharedMem->commandMonitor), INFINITE);
+		ReleaseMutex(data->commandMutex);
+
+		_tprintf(TEXT("%s"), command);
+	} while (data->shutdown != 1);
+
+}
+
+BOOL initMemAndSync(ControlData* p) {
 	BOOL firstProcess = FALSE;
 	_tprintf(TEXT("\n\nConfigs for the game initializing...\n"));
 
@@ -97,7 +117,7 @@ BOOL initMemAndSync(ControlData* p){
 	}
 
 	p->hWriteSem = CreateSemaphore(NULL, BUFFERSIZE, BUFFERSIZE, SEM_WRITE_NAME);
-	if(p->hWriteSem == NULL){
+	if (p->hWriteSem == NULL) {
 		_tprintf(TEXT("\nError creating writting semaphore: (%d).\n"), GetLastError());
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
@@ -115,9 +135,31 @@ BOOL initMemAndSync(ControlData* p){
 		return FALSE;
 	}
 
-	
+	p->commandEvent = CreateEvent(NULL, TRUE, FALSE, EVENT_NAME);
+	if (p->hReadSem == NULL) {
+		_tprintf(TEXT("\nError creating reading semaphore (%d).\n"), GetLastError());
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hReadSem);
+		return FALSE;
+	}
+
+	p->commandMutex = CreateMutex(NULL, FALSE, COMMAND_MUTEX_NAME);
+	if (p->commandMutex == NULL) {
+		_tprintf("\nError creating command mutex");
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hReadSem);
+		CloseHandle(p->commandEvent);
+	}
+
 	return TRUE;
 }
+
 
 
 BOOL configGame(Registry* registry, ControlData* controlData) {
@@ -296,9 +338,9 @@ int _tmain(int argc, TCHAR** argv) {
 			exit(1);
 		}
 	}else {
-		controlData.sharedMem->game->rows = _ttoi(argv[1]);
-		controlData.sharedMem->game->columns =  _ttoi(argv[2]);
-		controlData.sharedMem->game->time =  _ttoi(argv[3]);
+		controlData.game->rows = _ttoi(argv[1]);
+		controlData.game->columns =  _ttoi(argv[2]);
+		controlData.game->time =  _ttoi(argv[3]);
 	}
 
 	initBoard(&controlData);	
