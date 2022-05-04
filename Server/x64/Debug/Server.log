@@ -1,10 +1,159 @@
 ﻿  server.c
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(97,13): warning C4018: '>': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(102,12): warning C4018: '>': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(106,17): warning C4018: '>': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(111,15): warning C4018: '>': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(219,47): warning C4133: 'função': tipos incompatíveis - de 'char [32]' para 'const wchar_t *const '
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(230,44): warning C4133: 'função': tipos incompatíveis - de 'char [29]' para 'const wchar_t *const '
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(408,26): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(144): warning C4716: 'receiveCommnadsMonitor': deve retornar um valor
-  Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(104,13): warning C4018: '>=': incompatibilidade de signed/unsigned
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(109,12): warning C4018: '>=': incompatibilidade de signed/unsigned
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(113,17): warning C4018: '>=': incompatibilidade de signed/unsigned
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(118,15): warning C4018: '>=': incompatibilidade de signed/unsigned
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(154,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(157,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(163,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(166,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(172,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(175,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(188,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(191,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(197,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(200,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(213,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(216,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(222,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(225,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(238,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(241,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(247,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(250,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(256,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(259,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(272,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(275,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(281,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(284,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(297,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(300,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(306,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(309,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(322,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(325,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(331,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(334,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(340,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(343,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(356,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(359,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(365,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(368,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(374,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(377,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(390,20): warning C4047: 'função': 'const wchar_t *' difere em níveis de indireção de 'TCHAR'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(390,15): warning C4024: 'wcscmp': tipos diferentes para parâmetro formal e real 1
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(390,22): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2501' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(390,27): warning C4133: 'função': tipos incompatíveis - de 'char [2]' para 'const wchar_t *'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(392,80): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2513' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(392,86): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(392,160): warning C4566: caractere representado por nome de caractere universal (UCN) '\u251B' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(392,165): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(394,79): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(400,80): warning C4566: caractere representado por nome de caractere universal (UCN) '\u250F' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(400,86): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(400,160): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2517' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(400,165): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(402,79): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(410,20): warning C4047: 'função': 'const wchar_t *' difere em níveis de indireção de 'TCHAR'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(410,15): warning C4024: 'wcscmp': tipos diferentes para parâmetro formal e real 1
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(410,22): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2503' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(410,27): warning C4133: 'função': tipos incompatíveis - de 'char [2]' para 'const wchar_t *'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(412,80): warning C4566: caractere representado por nome de caractere universal (UCN) '\u251B' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(412,86): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(412,160): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2517' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(412,165): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(414,79): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(420,80): warning C4566: caractere representado por nome de caractere universal (UCN) '\u250F' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(420,86): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(420,160): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2513' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(420,165): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(422,79): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(431,20): warning C4047: 'função': 'const wchar_t *' difere em níveis de indireção de 'TCHAR'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(431,15): warning C4024: 'wcscmp': tipos diferentes para parâmetro formal e real 1
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(431,22): warning C4566: caractere representado por nome de caractere universal (UCN) '\u250F' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(431,27): warning C4133: 'função': tipos incompatíveis - de 'char [2]' para 'const wchar_t *'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(432,82): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(434,81): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2513' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(434,87): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(434,161): warning C4566: caractere representado por nome de caractere universal (UCN) '\u251B' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(434,167): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(434,241): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2501' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(434,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(436,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(445,82): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(447,81): warning C4566: caractere representado por nome de caractere universal (UCN) '\u251B' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(447,87): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(447,161): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2517' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(447,167): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(447,241): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2503' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(447,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(449,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(462,20): warning C4047: 'função': 'const wchar_t *' difere em níveis de indireção de 'TCHAR'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(462,15): warning C4024: 'wcscmp': tipos diferentes para parâmetro formal e real 1
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(462,22): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2513' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(462,27): warning C4133: 'função': tipos incompatíveis - de 'char [2]' para 'const wchar_t *'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(463,82): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(465,81): warning C4566: caractere representado por nome de caractere universal (UCN) '\u250F' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(465,87): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(465,161): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2517' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(465,167): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(465,241): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2501' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(465,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(467,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(476,82): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(478,81): warning C4566: caractere representado por nome de caractere universal (UCN) '\u251B' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(478,87): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(478,161): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2517' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(478,167): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(478,241): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2503' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(478,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(480,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(493,20): warning C4047: 'função': 'const wchar_t *' difere em níveis de indireção de 'TCHAR'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(493,15): warning C4024: 'wcscmp': tipos diferentes para parâmetro formal e real 1
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(493,22): warning C4566: caractere representado por nome de caractere universal (UCN) '\u251B' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(493,27): warning C4133: 'função': tipos incompatíveis - de 'char [2]' para 'const wchar_t *'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(494,82): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(496,81): warning C4566: caractere representado por nome de caractere universal (UCN) '\u250F' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(496,87): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(496,161): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2517' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(496,167): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(496,241): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2501' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(496,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(498,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(507,82): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(509,81): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2513' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(509,87): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(509,161): warning C4566: caractere representado por nome de caractere universal (UCN) '\u250F' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(509,167): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(509,241): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2503' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(509,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(511,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(524,20): warning C4047: 'função': 'const wchar_t *' difere em níveis de indireção de 'TCHAR'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(524,15): warning C4024: 'wcscmp': tipos diferentes para parâmetro formal e real 1
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(524,22): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2517' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(524,27): warning C4133: 'função': tipos incompatíveis - de 'char [2]' para 'const wchar_t *'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(525,82): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(527,81): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2513' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(527,87): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(527,161): warning C4566: caractere representado por nome de caractere universal (UCN) '\u251B' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(527,167): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(527,241): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2501' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(527,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(529,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(538,82): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(540,81): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2513' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(540,87): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(540,161): warning C4566: caractere representado por nome de caractere universal (UCN) '\u250F' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(540,167): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(540,241): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2503' não pode ser representado na página de código atual (1252)
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(540,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(542,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(666,47): warning C4133: 'função': tipos incompatíveis - de 'char [32]' para 'const wchar_t *const '
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(677,44): warning C4133: 'função': tipos incompatíveis - de 'char [29]' para 'const wchar_t *const '
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(860,26): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(591): warning C4716: 'receiveCommnadsMonitor': deve retornar um valor
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(566): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
+  Server.vcxproj -> C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Pipe Game\x64\Debug\Server.exe
