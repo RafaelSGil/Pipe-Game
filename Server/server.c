@@ -9,6 +9,7 @@
 #define SIZE_DWORD 257*(sizeof(DWORD))
 #define SHM_NAME TEXT("fmMsgSpace") // Name of the shared memory
 #define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
+#define MUTEX_NAME_PLAY TEXT("fmMutexPlay") // Name of the mutex   
 #define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
 #define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
 #define EVENT_NAME TEXT("COMMANDEVENT") //Name of the command event
@@ -20,6 +21,10 @@ typedef struct _Game{
 	DWORD rows;
 	DWORD columns;
 	DWORD time;
+	DWORD begginingR;
+	DWORD begginingC;
+	DWORD endR;
+	DWORD endC;
 	TCHAR pieces[6];
 }Game;
 
@@ -42,9 +47,9 @@ typedef struct _ControlData {
 	HANDLE hMapFile; // Memory
 	SharedMem* sharedMem; // Shared memory of the game
 	HANDLE hMutex; // Mutex
+	HANDLE hMutexPlay;
 	HANDLE hWriteSem; // Light warns writting
 	HANDLE hReadSem; // Light warns reading 
-	HANDLE hThreadTime;
 	HANDLE commandEvent; //event used to coordinate commands received
 	HANDLE commandMutex; //mutex used to coordinate commands
 	Game* game;
@@ -55,9 +60,8 @@ DWORD WINAPI sendData(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 	int i = 0;
 
-	while (1) {
-		if (data->shutdown == 1)
-			return 0;
+	while (data->shutdown == 0) {
+		WaitForSingleObject(data->hMutexPlay, INFINITE);
 		WaitForSingleObject(data->hWriteSem, INFINITE);
 		WaitForSingleObject(data->hMutex, INFINITE);
 		CopyMemory(&(data->sharedMem->game[i]), data->game, sizeof(Game));
@@ -65,8 +69,154 @@ DWORD WINAPI sendData(LPVOID p) {
 		if (i == BUFFERSIZE)
 			i = 0;
 		ReleaseMutex(data->hMutex);
+		ReleaseMutex(data->hMutexPlay);
 		ReleaseSemaphore(data->hReadSem, 1, NULL);
 	}
+	return 1;
+}
+
+DWORD WINAPI decreaseTime(LPVOID p) {
+	ControlData* data = (ControlData*)p;
+
+	while (data->shutdown == 0) {
+		(data->game->time)--;
+		Sleep(1000);
+	}
+	return 1;
+}
+
+void play(ControlData* controlData) {
+	int row = 50;
+	int column = 50;
+	int number = 0;
+	TCHAR option[BUFFER];
+	
+
+	while (1) {
+		WaitForSingleObject(controlData->hMutexPlay, INFINITE);
+		number = rand() % 5;
+		_tprintf(TEXT("\nPiece: %c\n"), controlData->game->pieces[number]);
+
+
+		while(row >= controlData->game->rows){
+			_tprintf(TEXT("\nRow: "));
+			_fgetts(option, BUFFER, stdin);
+			row = _ttoi(option);
+			
+			if (row >= controlData->game->rows && row != controlData->game->begginingR && controlData->game->endR)
+				_tprintf(TEXT("\nRows have to be between 0 and %d\n"), controlData->game->rows);
+		}
+
+		while (column >= controlData->game->columns) {
+			_tprintf(TEXT("\nColumns: "));
+			_fgetts(option, BUFFER, stdin);
+			column = _ttoi(option);
+
+			if (column >= controlData->game->columns && column != controlData->game->begginingC && controlData->game->endC)
+				_tprintf(TEXT("\nColumn have to be between 0 and %d\n"), controlData->game->columns);
+		}
+		controlData->game->board[row * controlData->game->rows + column] = controlData->game->pieces[number];
+
+
+		row = 50;
+		column = 50;
+		ReleaseMutex(controlData->hMutexPlay);
+	}
+}
+
+void waterFlow(ControlData* data) {
+	DWORD waterRow = data->game->begginingR;
+	DWORD waterColumns = data->game->begginingC;
+	TCHAR piece;
+
+	if (waterRow == 0 && waterColumns != 0 && waterColumns != 9) {
+		if (data->game->board[waterRow * data->game->rows + (waterColumns + 1)] != "_") {
+			if (data->game->board[waterRow * data->game->rows + (waterColumns + 1)] == data->game->pieces[0] || data->game->board[waterRow * data->game->rows + (waterColumns + 1)] == data->game->pieces[3]){
+				piece = data->game->board[waterRow * data->game->rows + (waterColumns + 1)];
+				data->game->board[waterRow * data->game->rows + (waterColumns + 1)] = "*";
+				waterColumns++;
+				//continue;
+			}
+		}if (data->game->board[waterRow * data->game->rows + (waterColumns - 1)] != "_") {
+			if (data->game->board[waterRow * data->game->rows + (waterColumns - 1)] == data->game->pieces[0] || data->game->board[waterRow * data->game->rows + (waterColumns - 1)] == data->game->pieces[2]) {
+				piece = data->game->board[waterRow * data->game->rows + (waterColumns - 1)];
+				data->game->board[waterRow * data->game->rows + (waterColumns - 1)] = "*";
+				waterColumns--;
+				//continue;
+			}
+		}if (data->game->board[(waterRow+1) * data->game->rows + waterColumns] != "_") {
+			if (data->game->board[(waterRow+1) * data->game->rows + waterColumns] == data->game->pieces[1] || data->game->board[(waterRow + 1) * data->game->rows + waterColumns] == data->game->pieces[4] || data->game->board[(waterRow + 1) * data->game->rows + waterColumns] == data->game->pieces[5]) {
+				piece = data->game->board[(waterRow+1) * data->game->rows + waterColumns];
+				data->game->board[(waterRow+1) * data->game->rows + waterColumns] = "*";
+				waterRow++;
+				//continue;
+			}
+		}
+	}
+
+	if (waterRow == 0 && waterColumns == 0) {
+		if (data->game->board[waterRow * data->game->rows + (waterColumns + 1)] != "_") {
+			if (data->game->board[waterRow * data->game->rows + (waterColumns + 1)] == data->game->pieces[0] || data->game->board[waterRow * data->game->rows + (waterColumns + 1)] == data->game->pieces[3]) {
+				piece = data->game->board[waterRow * data->game->rows + (waterColumns + 1)];
+				data->game->board[waterRow * data->game->rows + (waterColumns + 1)] = "*";
+				waterColumns++;
+				//continue;
+			}
+		}if (data->game->board[(waterRow + 1) * data->game->rows + waterColumns] != "_") {
+			if (data->game->board[(waterRow + 1) * data->game->rows + waterColumns] == data->game->pieces[1] || data->game->board[(waterRow + 1) * data->game->rows + waterColumns] == data->game->pieces[5]) {
+				piece = data->game->board[(waterRow + 1) * data->game->rows + waterColumns];
+				data->game->board[(waterRow + 1) * data->game->rows + waterColumns] = "*";
+				waterRow++;
+				//continue;
+			}
+		}
+	}
+
+	if (waterRow == 0  && waterColumns == 9) {
+		if (data->game->board[waterRow * data->game->rows + (waterColumns - 1)] != "_") {
+			if (data->game->board[waterRow * data->game->rows + (waterColumns - 1)] == data->game->pieces[0] || data->game->board[waterRow * data->game->rows + (waterColumns - 1)] == data->game->pieces[2]) {
+				piece = data->game->board[waterRow * data->game->rows + (waterColumns - 1)];
+				data->game->board[waterRow * data->game->rows + (waterColumns - 1)] = "*";
+				waterColumns--;
+				//continue;
+			}
+		}if (data->game->board[(waterRow + 1) * data->game->rows + waterColumns] != "_") {
+			if (data->game->board[(waterRow + 1) * data->game->rows + waterColumns] == data->game->pieces[1] || data->game->board[(waterRow + 1) * data->game->rows + waterColumns] == data->game->pieces[4]) {
+				piece = data->game->board[(waterRow + 1) * data->game->rows + waterColumns];
+				data->game->board[(waterRow + 1) * data->game->rows + waterColumns] = "*";
+				waterRow++;
+				//continue;
+			}
+		}
+	}
+
+	if (waterRow == 9 && waterColumns != 0 && waterColumns != 9) {
+		if (data->game->board[waterRow * data->game->rows + (waterColumns + 1)] != "_") {
+			if (data->game->board[waterRow * data->game->rows + (waterColumns + 1)] == data->game->pieces[0] || data->game->board[waterRow * data->game->rows + (waterColumns + 1)] == data->game->pieces[4]) {
+				piece = data->game->board[waterRow * data->game->rows + (waterColumns + 1)];
+				data->game->board[waterRow * data->game->rows + (waterColumns + 1)] = "*";
+				waterColumns++;
+				//continue;
+			}
+		}if (data->game->board[waterRow * data->game->rows + (waterColumns - 1)] != "_") {
+			if (data->game->board[waterRow * data->game->rows + (waterColumns - 1)] == data->game->pieces[0] || data->game->board[waterRow * data->game->rows + (waterColumns - 1)] == data->game->pieces[5]) {
+				piece = data->game->board[waterRow * data->game->rows + (waterColumns - 1)];
+				data->game->board[waterRow * data->game->rows + (waterColumns - 1)] = "*";
+				waterColumns--;
+				//continue;
+			}
+		}if (data->game->board[(waterRow - 1) * data->game->rows + waterColumns] != "_") {
+			if (data->game->board[(waterRow - 1) * data->game->rows + waterColumns] == data->game->pieces[1] || data->game->board[(waterRow - 1) * data->game->rows + waterColumns] == data->game->pieces[2] || data->game->board[(waterRow - 1) * data->game->rows + waterColumns] == data->game->pieces[3]) {
+				piece = data->game->board[(waterRow - 1) * data->game->rows + waterColumns];
+				data->game->board[(waterRow - 1) * data->game->rows + waterColumns] = "*";
+				waterRow--;
+				//continue;
+			}
+		}
+	}
+	
+
+
 }
 
 
@@ -144,6 +294,16 @@ BOOL initMemAndSync(ControlData* p) {
 		return FALSE;
 	}
 
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		_tprintf(TEXT("\nYou cant run two servers at once, shutting down.\n"));
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hReadSem);
+		exit(1);
+	}
+
 	p->commandEvent = CreateEvent(NULL, TRUE, FALSE, EVENT_NAME);
 	if (p->hReadSem == NULL) {
 		_tprintf(TEXT("\nError creating reading semaphore (%d).\n"), GetLastError());
@@ -157,13 +317,25 @@ BOOL initMemAndSync(ControlData* p) {
 
 	p->commandMutex = CreateMutex(NULL, FALSE, COMMAND_MUTEX_NAME);
 	if (p->commandMutex == NULL) {
-		_tprintf("\nError creating command mutex");
+		_tprintf("\nError creating command mutex.\n");
 		UnmapViewOfFile(p->sharedMem);
 		CloseHandle(p->hMapFile);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
 		CloseHandle(p->hReadSem);
 		CloseHandle(p->commandEvent);
+	}
+
+	p->hMutexPlay = CreateMutex(NULL, FALSE, MUTEX_NAME_PLAY);
+	if (p->hMutexPlay == NULL) {
+		_tprintf("\nError creating play mutex.\n");
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hReadSem);
+		CloseHandle(p->commandEvent);
+		CloseHandle(p->commandMutex);
 	}
 
 	return TRUE;
@@ -222,7 +394,6 @@ void startGame(ControlData* data) {
 	DWORD randomRow = -1;
 	DWORD randomColumn = -1;
 	int number;
-	srand((unsigned int)time(NULL));
 	int quadrante = 0;
 
 	_tcscpy_s(&data->game->pieces[0], sizeof(TCHAR), TEXT("━"));
@@ -255,6 +426,8 @@ void startGame(ControlData* data) {
 			randomRow = data->game->rows - 1;
 	}
 	data->game->board[randomRow * data->game->rows + randomColumn] = 'B';
+	data->game->begginingR = randomRow;
+	data->game->begginingC = randomColumn;
 
 	if (randomRow < data->game->rows / 2 && randomColumn < data->game->columns / 2)
 		quadrante = 1;
@@ -310,6 +483,8 @@ void startGame(ControlData* data) {
 		}
 		data->game->board[randomRow * data->game->rows + randomColumn] = 'E';
 	}
+	data->game->endR = randomRow;
+	data->game->endC = randomColumn;
 }
 
 
@@ -332,8 +507,10 @@ int _tmain(int argc, TCHAR** argv) {
 	TCHAR option[BUFFER] = TEXT(" ");
 	HANDLE hThreadSendDataToMonitor;
 	HANDLE receiveCommandsMonitorThread;
+	HANDLE hThreadTime;
 	controlData.shutdown = 0; // trinco 
 	controlData.count = 0; // numero de itens
+	srand((unsigned int)time(NULL));
 
 
 	_tprintf(TEXT("\n-------------------PIPEGAME---------------\n"));
@@ -358,8 +535,14 @@ int _tmain(int argc, TCHAR** argv) {
 	
 	// Function to start the game
 	startGame(&controlData);
+
+	hThreadTime = CreateThread(NULL, 0, decreaseTime, &controlData, 0, NULL);
+	if (hThreadTime == NULL) {
+		_tprintf(TEXT("\nCouldnt create thread to decrease the time of the game.\n"));
+		exit(1);
+	}
+
 	hThreadSendDataToMonitor = CreateThread(NULL, 0, sendData, &controlData, 0, NULL);
-	
 	if (hThreadSendDataToMonitor == NULL) {
 		_tprintf(TEXT("\nCouldnt create thread to send data to the monitor.\n"));
 		exit(1);
@@ -384,21 +567,33 @@ int _tmain(int argc, TCHAR** argv) {
 			_tprintf(TEXT("\nClosing the application...\n"));
 			controlData.shutdown = 1;
 			break;
+
+		case 5:
+			play(&controlData);
 		default: 
 			_tprintf(TEXT("\nCouldn´t recognize the command.\n"));
 			break;
 		}
 	}
 	
-	
+	// Waiting for the thread to end
+	WaitForSingleObject(receiveCommandsMonitorThread, INFINITE);
+	WaitForSingleObject(hThreadTime, INFINITE);
+	WaitForSingleObject(hThreadSendDataToMonitor, INFINITE);
+
 
 	// Closing of all the handles
 	RegCloseKey(registry.key);
 	UnmapViewOfFile(controlData.sharedMem);
+	CloseHandle(hThreadTime);
+	CloseHandle(hThreadSendDataToMonitor);
+	CloseHandle(receiveCommandsMonitorThread);
+	CloseHandle(controlData.commandMutex);
+	CloseHandle(controlData.commandEvent);
 	CloseHandle(controlData.hMapFile);
+	CloseHandle(controlData.hMutexPlay);
 	CloseHandle(controlData.hMutex);
 	CloseHandle(controlData.hWriteSem);
 	CloseHandle(controlData.hReadSem);
-
 	return 0;
 }

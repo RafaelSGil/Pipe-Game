@@ -1,5 +1,10 @@
 ﻿  server.c
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(160,44): warning C4133: 'função': tipos incompatíveis - de 'char [30]' para 'const wchar_t *const '
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(225,26): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(95): warning C4716: 'receiveCommnadsMonitor': deve retornar um valor
-  Server.vcxproj -> C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Pipe Game\x64\Debug\Server.exe
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(97,13): warning C4018: '>': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(102,12): warning C4018: '>': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(106,17): warning C4018: '>': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(111,15): warning C4018: '>': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(219,47): warning C4133: 'função': tipos incompatíveis - de 'char [32]' para 'const wchar_t *const '
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(230,44): warning C4133: 'função': tipos incompatíveis - de 'char [29]' para 'const wchar_t *const '
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(408,26): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(144): warning C4716: 'receiveCommnadsMonitor': deve retornar um valor
+  Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe

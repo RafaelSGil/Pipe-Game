@@ -8,7 +8,8 @@
 #define BUFFER 256
 #define SIZE_DWORD 257*(sizeof(DWORD))
 #define SHM_NAME TEXT("fmMsgSpace") // Name of the shared memory
-#define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
+#define MUTEX_NAME TEXT("fmMutex") // Name of the mutex  
+#define MUTEX_NAME_PLAY TEXT("fmMutexPlay") // Name of the mutex   
 #define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
 #define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
 #define EVENT_NAME TEXT("COMMANDEVENT") //Name of the command event
@@ -20,6 +21,10 @@ typedef struct _Game {
 	DWORD rows;
 	DWORD columns;
 	DWORD time;
+	DWORD begginingR;
+	DWORD begginingC;
+	DWORD endR;
+	DWORD endC;
 	TCHAR pieces[6];
 }Game;
 
@@ -42,6 +47,7 @@ typedef struct _ControlData {
 	HANDLE hMapFile; // Memory
 	SharedMem* sharedMem; // Shared memory of the game
 	HANDLE hMutex; // Mutex
+	HANDLE hMutexPlay;
 	HANDLE hWriteSem; // Light warns writting
 	HANDLE hReadSem; // Light warns reading 
 	HANDLE hThreadTime;
@@ -192,6 +198,18 @@ BOOL initMemAndSync(ControlData* p) {
 		return FALSE;
 	}
 
+	p->hMutexPlay = CreateMutex(NULL, FALSE, MUTEX_NAME_PLAY);
+	if (p->hMutexPlay == NULL) {
+		_tprintf("\nError creating play mutex.\n");
+		UnmapViewOfFile(p->sharedMem);
+		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMutex);
+		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hReadSem);
+		CloseHandle(p->commandEvent);
+		CloseHandle(p->commandMutex);
+	}
+
 	return TRUE;
 }
 
@@ -213,6 +231,10 @@ int _tmain(int argc, TCHAR** argv) {
 	controlData.shutdown = 0;
 	controlData.count = 0;
 
+	if (OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, SEM_WRITE_NAME) == NULL) {
+		_tprintf(TEXT("\nCant launch monitor because server isnt running.\n"));
+		exit(1);
+	}
 	if (!initMemAndSync(&controlData)) {
 		_tprintf(_T("Error creating/opening shared memory and synchronization mechanisms.\n"));
 		exit(1);
