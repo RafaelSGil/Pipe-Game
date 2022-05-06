@@ -783,8 +783,10 @@ int initBoard(ControlData* data) {
 }
 
 void startGame(ControlData* data) {
-	DWORD randomRow = -1;
-	DWORD randomColumn = -1;
+	DWORD randomRowB = -1;
+	DWORD randomColumnB = -1;
+	DWORD randomRowE = -1;
+	DWORD randomColumnE = -1;
 	int number;
 	int quadrante = 0;
 
@@ -798,34 +800,34 @@ void startGame(ControlData* data) {
 	number = rand() % 2 + 1;
 
 	if (number == 1) {
-		randomRow = rand() % data->game->rows;
+		randomRowB = rand() % data->game->rows;
 
 		number = rand() % 2 + 1;
 
 		if (number == 1)
-			randomColumn = 0;
+			randomColumnB = 0;
 		else
-			randomColumn = data->game->columns - 1;
+			randomColumnB = data->game->columns - 1;
 	}
 	else {
-		randomColumn = rand() % data->game->columns;
+		randomColumnB = rand() % data->game->columns;
 
 		number = rand() % 2 + 1;
 
 		if (number == 1)
-			randomRow = 0;
+			randomRowB = 0;
 		else
-			randomRow = data->game->rows - 1;
+			randomRowB = data->game->rows - 1;
 	}
-	data->game->board[randomRow * data->game->rows + randomColumn] = 'B';
-	data->game->begginingR = randomRow;
-	data->game->begginingC = randomColumn;
+	data->game->board[randomRowB * data->game->rows + randomColumnB] = 'B';
+	data->game->begginingR = randomRowB;
+	data->game->begginingC = randomColumnB;
 
-	if (randomRow < data->game->rows / 2 && randomColumn < data->game->columns / 2)
+	if (randomRowB < data->game->rows / 2 && randomColumnB < data->game->columns / 2)
 		quadrante = 1;
-	else if (randomRow < data->game->rows / 2 && randomColumn >= data->game->columns / 2)
+	else if (randomRowB < data->game->rows / 2 && randomColumnB >= data->game->columns / 2)
 		quadrante = 2;
-	else if (randomRow >= data->game->rows / 2 && randomColumn < data->game->columns / 2)
+	else if (randomRowB >= data->game->rows / 2 && randomColumnB < data->game->columns / 2)
 		quadrante = 3;
 	else
 		quadrante = 4;
@@ -833,54 +835,50 @@ void startGame(ControlData* data) {
 	if (quadrante == 1) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRow = (rand() % (data->game->rows /2) + (data->game->rows /2));
-			randomColumn = data->game->columns - 1;
+			randomRowE = (rand() % (data->game->rows /2) + (data->game->rows /2));
+			randomColumnE = data->game->columns - 1;
 		}
 		else {
-			randomColumn = (rand() % (data->game->columns/2) + (data->game->columns/2));
-			randomRow = data->game->rows - 1;
+			randomColumnE = (rand() % (data->game->columns/2) + (data->game->columns/2));
+			randomRowE = data->game->rows - 1;
 		}
-		data->game->board[randomRow * data->game->rows + randomColumn] = 'E';
 	}else if (quadrante == 2) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRow = (rand() % (data->game->rows / 2) + (data->game->rows / 2));
-			randomColumn = 0;
+			randomRowE = (rand() % (data->game->rows / 2) + (data->game->rows / 2));
+			randomColumnE = 0;
 		}
 		else {
-			randomColumn = rand() % (data->game->columns / 2);
-			randomRow = data->game->rows-1;
+			randomColumnE = rand() % (data->game->columns / 2);
+			randomRowE = data->game->rows-1;
 		}
-		data->game->board[randomRow * data->game->rows + randomColumn] = 'E';
 	}else if (quadrante == 3) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRow = rand() % (data->game->rows / 2);
-			randomColumn = data->game->columns-1;
+			randomRowE = rand() % (data->game->rows / 2);
+			randomColumnE = data->game->columns-1;
 		}
 		else {
-			randomColumn = (rand() % (data->game->columns / 2) + (data->game->columns/2));
-			randomRow = 0;
+			randomColumnE = (rand() % (data->game->columns / 2) + (data->game->columns/2));
+			randomRowE = 0;
 		}
-		data->game->board[randomRow * data->game->rows + randomColumn] = 'E';
-	}else if (quadrante == 4) {
+	}else if(quadrante == 4) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRow = rand() % (data->game->rows/2);
-			randomColumn = 0;
+			randomRowE = rand() % (data->game->rows/2);
+			randomColumnE = 0;
 		}
 		else {
-			randomColumn = rand() % (data->game->columns / 2);
-			randomRow = 0;
+			randomColumnE = rand() % (data->game->columns / 2);
+			randomRowE = 0;
 		}
-		data->game->board[randomRow * data->game->rows + randomColumn] = 'E';
+		
 	}
-	data->game->endR = randomRow;
-	data->game->endC = randomColumn;
+	data->game->board[randomRowE * data->game->rows + randomColumnE] = 'E';
+	
+	data->game->endR = randomRowE;
+	data->game->endC = randomColumnE;
 }
-
-
-
 
 int _tmain(int argc, TCHAR** argv) {
 // Default code for windows32 API
@@ -921,6 +919,8 @@ int _tmain(int argc, TCHAR** argv) {
 		controlData.game->rows = _ttoi(argv[1]);
 		controlData.game->columns =  _ttoi(argv[2]);
 		controlData.game->time =  _ttoi(argv[3]);
+
+		_tprintf(TEXT("\nBoard Loaded with [%d] rows and [%d] columns, water [%d] seconds.\n"), controlData.game->rows, controlData.game->columns, controlData.game->time);
 	}
 
 	initBoard(&controlData);	

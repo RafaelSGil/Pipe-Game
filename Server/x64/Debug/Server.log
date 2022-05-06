@@ -148,6 +148,6 @@ C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(547,241): warning C4566: caracte
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(547,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(549,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(145,1): warning C4047: 'inicializando': 'TCHAR' difere em níveis de indireção de 'unsigned short [2]'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(906,26): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(904,26): warning C4013: 'time' indefinido; assumindo extern retornando int
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(573): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
   Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
