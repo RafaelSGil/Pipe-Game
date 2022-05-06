@@ -18,7 +18,7 @@
 #define BUFFERSIZE 10
 
 typedef struct _Game {
-	TCHAR board[400];
+	TCHAR board[20][20];
 	DWORD rows;
 	DWORD columns;
 	DWORD time;
@@ -69,7 +69,7 @@ void showBoard(ControlData* data) {
 		
 		_tprintf(TEXT("\n"));
 		for (DWORD j = 0; j < data->game->columns; j++)
-			_tprintf(TEXT("%c "), data->game->board[i * data->game->rows + j]);
+			_tprintf(TEXT("%c "), data->game->board[i][j]);
 	}
 	_tprintf(TEXT("\n"));
 	ReleaseMutex(data->hMutex);
@@ -78,7 +78,6 @@ void showBoard(ControlData* data) {
 
 DWORD WINAPI receiveData(LPVOID p) {
 	ControlData* data = (ControlData*)p;
-	int i = 0;
 
 	while (1) {
 		if (data->shutdown == 1)
@@ -86,9 +85,6 @@ DWORD WINAPI receiveData(LPVOID p) {
 		WaitForSingleObject(data->hReadSem, INFINITE);
 		WaitForSingleObject(data->hMutex, INFINITE);
 		CopyMemory(data->game, &(data->sharedMemGame->game), sizeof(Game));
-		i++;
-		if (i == BUFFERSIZE)
-			i = 0;
 		ReleaseMutex(data->hMutex);
 		ReleaseSemaphore(data->hWriteSem, 1, NULL);
 
@@ -256,7 +252,6 @@ BOOL initMemAndSync(ControlData* p) {
 		CloseHandle(p->hReadSem);
 		CloseHandle(p->commandEvent);
 		CloseHandle(p->hMapFileMemory);
-		CloseHandle(p->commandMutex);
 		UnmapViewOfFile(p->sharedMemCommand);
 	}
 
