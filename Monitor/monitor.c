@@ -7,8 +7,9 @@
 
 #define BUFFER 256
 #define SIZE_DWORD 257*(sizeof(DWORD))
-#define SHM_NAME TEXT("fmMsgSpace") // Name of the shared memory
-#define MUTEX_NAME TEXT("fmMutex") // Name of the mutex  
+#define SHM_NAME_GAME TEXT("fmGameSpace") // Name of the shared memory for the game
+#define SHM_NAME_MESSAGE TEXT("fmMsgSpace") // Name of the shared memory for the message
+#define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
 #define MUTEX_NAME_PLAY TEXT("fmMutexPlay") // Name of the mutex   
 #define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
 #define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
@@ -35,23 +36,28 @@ typedef struct _Registry {
 	TCHAR name[BUFFER];
 }Registry;
 
-typedef struct _SharedMem {
-	Game game[BUFFERSIZE];
-	DWORD commandMonitor;
-}SharedMem;
+typedef struct _SharedMemGame {
+	Game game;
+}SharedMemGame;
+
+typedef struct _SharedMemCommand {
+	DWORD commandMonitor[BUFFERSIZE];
+}SharedMemCommand;
+
 
 typedef struct _ControlData {
 	unsigned int shutdown; // Release
 	unsigned int id; // Id from the process
 	unsigned int count; // Counter for the items
-	HANDLE hMapFile; // Memory
-	SharedMem* sharedMem; // Shared memory of the game
+	HANDLE hMapFileGame; // Memory from the game
+	HANDLE hMapFileMemory; // Memory from the message
+	SharedMemGame* sharedMemGame; // Shared memory of the game
+	SharedMemCommand* sharedMemCommand; // Shared memory of the command from the monitor
 	HANDLE hMutex; // Mutex
 	HANDLE hMutexPlay;
 	HANDLE hWriteSem; // Light warns writting
 	HANDLE hReadSem; // Light warns reading 
-	HANDLE hThreadTime;
-	HANDLE commandEvent; //event used to coordinate commands 
+	HANDLE commandEvent; //event used to coordinate commands received
 	HANDLE commandMutex; //mutex used to coordinate commands
 	Game* game;
 }ControlData;
@@ -80,7 +86,7 @@ DWORD WINAPI receiveData(LPVOID p) {
 			return 0;
 		WaitForSingleObject(data->hReadSem, INFINITE);
 		WaitForSingleObject(data->hMutex, INFINITE);
-		CopyMemory(data->game, &(data->sharedMem->game[i]), sizeof(Game));
+		CopyMemory(data->game, &(data->sharedMemGame->game), sizeof(Game));
 		i++;
 		if (i == BUFFERSIZE)
 			i = 0;
@@ -91,8 +97,12 @@ DWORD WINAPI receiveData(LPVOID p) {
 }
 
 void sendCommand(ControlData* data, DWORD command) {
+	int i = 0;
 	WaitForSingleObject(data->commandMutex, INFINITE);
-	CopyMemory(&(data->sharedMem->commandMonitor), &command, sizeof(DWORD));
+	if (i == BUFFERSIZE)
+		i = 0;
+	CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(DWORD));
+	i++;
 	ReleaseMutex(data->commandMutex);
 	SetEvent(data->commandEvent);
 	Sleep(500);
@@ -103,111 +113,171 @@ DWORD WINAPI executeCommands(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 	TCHAR option[BUFFER] = TEXT(" ");
 	DWORD command;
-
+	int i = 0;
 
 	do {
 		_getts_s(option, _countof(option));
 
 		if (_tcscmp(option, TEXT("show")) == 0)
 			showBoard(data);
-		if (_tcscmp(option, TEXT("faucet")) == 0) {
-			sendCommand(data, 1);
-		}
-		if (_tcscmp(option, TEXT("insert")) == 0) {
-			sendCommand(data, 2);
-		}
-		if (_tcscmp(option, TEXT("random")) == 0) {
-			sendCommand(data, 3);
+		else if (_tcscmp(option, TEXT("faucet")) == 0) {
+			//sendCommand(data, 1);
+			WaitForSingleObject(data->commandMutex, INFINITE);
+			if (i == BUFFERSIZE)
+				i = 0;
+			command = 1;
+			CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(DWORD));
+			i++;
+			ReleaseMutex(data->commandMutex);
+			SetEvent(data->commandEvent);
+			Sleep(500);
+			ResetEvent(data->commandEvent);
+		}else if (_tcscmp(option, TEXT("insert")) == 0) {
+			//sendCommand(data, 2);
+			WaitForSingleObject(data->commandMutex, INFINITE);
+			if (i == BUFFERSIZE)
+				i = 0;
+			command = 2;
+			CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(DWORD));
+			i++;
+			ReleaseMutex(data->commandMutex);
+			SetEvent(data->commandEvent);
+			Sleep(500);
+			ResetEvent(data->commandEvent);
+		}else if (_tcscmp(option, TEXT("random")) == 0) {
+			//sendCommand(data, 3);
+			WaitForSingleObject(data->commandMutex, INFINITE);
+			if (i == BUFFERSIZE)
+				i = 0;
+			command = 3;
+			CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(DWORD));
+			i++;
+			ReleaseMutex(data->commandMutex);
+			SetEvent(data->commandEvent);
+			Sleep(500);
+			ResetEvent(data->commandEvent);
+		}else {
+			_tprintf(TEXT("\nCouldnt recognize command.\n"));
 		}
 	} while (_tcscmp(option, TEXT("exit")) != 0);
 
 	data->shutdown = 1;
+	return 1;
 }
 
 
 BOOL initMemAndSync(ControlData* p) {
 	BOOL firstProcess = FALSE;
-	_tprintf(TEXT("\n\nConfigs for the game initializing...\n"));
+	_tprintf(TEXT("\n\nConfigs for the monitor initializing...\n\n"));
 
-	p->hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, SHM_NAME);
+	p->hMapFileGame = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, SHM_NAME_GAME);
 
-	if (p->hMapFile == NULL) { // Map
+	if (p->hMapFileGame == NULL) { // Map
 		firstProcess = TRUE;
-		p->hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(SharedMem), SHM_NAME);
+		p->hMapFileGame = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(SharedMemGame), SHM_NAME_GAME);
 
-		if (p->hMapFile == NULL) {
-			_tprintf(TEXT("\nErro CreateFileMapping (%d).\n"), GetLastError());
+		if (p->hMapFileGame == NULL) {
+			_tprintf(TEXT("\nError CreateFileMapping (%d).\n"), GetLastError());
 			return FALSE;
 		}
 	}
 
-	p->sharedMem = (SharedMem*)MapViewOfFile(p->hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SharedMem)); // Shared Memory
-	if (p->sharedMem == NULL) {
+	p->sharedMemGame = (SharedMemGame*)MapViewOfFile(p->hMapFileGame, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SharedMemGame)); // Shared Memory
+	if (p->sharedMemGame == NULL) {
 		_tprintf(TEXT("\nError: MapViewOfFile (%d)."), GetLastError());
-		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMapFileGame);
 		return FALSE;
+	}
+
+	p->hMapFileMemory = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, SHM_NAME_MESSAGE);
+	if (p->hMapFileMemory == NULL) {
+		p->hMapFileMemory = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(SharedMemCommand), SHM_NAME_MESSAGE);
+
+		if (p->hMapFileMemory == NULL) {
+			_tprintf(TEXT("\nError CreateFileMapping (%d).\n"), GetLastError());
+			return FALSE;
+		}
+	}
+
+	p->sharedMemCommand = (SharedMemCommand*)MapViewOfFile(p->hMapFileMemory, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SharedMemCommand));
+	if (p->sharedMemCommand == NULL) {
+		_tprintf(TEXT("\nError: MapViewOfFile (%d)."), GetLastError());
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
+		CloseHandle(p->hMapFileMemory);
 	}
 
 	p->hMutex = CreateMutex(NULL, FALSE, MUTEX_NAME);
 	if (p->hMutex == NULL) {
 		_tprintf(TEXT("\nError creating mutex (%d).\n"), GetLastError());
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 		return FALSE;
 	}
 
 	p->hWriteSem = CreateSemaphore(NULL, BUFFERSIZE, BUFFERSIZE, SEM_WRITE_NAME);
 	if (p->hWriteSem == NULL) {
 		_tprintf(TEXT("\nError creating writting semaphore: (%d).\n"), GetLastError());
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 		return FALSE;
 	}
 
 	p->hReadSem = CreateSemaphore(NULL, BUFFERSIZE, BUFFERSIZE, SEM_READ_NAME);
 	if (p->hReadSem == NULL) {
 		_tprintf(TEXT("\nError creating reading semaphore (%d).\n"), GetLastError());
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 		return FALSE;
 	}
 
 	p->commandEvent = CreateEvent(NULL, TRUE, FALSE, EVENT_NAME);
-	if (p->hReadSem == NULL) {
-		_tprintf(TEXT("\nError creating command semaphore (%d).\n"), GetLastError());
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+	if (p->commandEvent == NULL) {
+		_tprintf(TEXT("\nError creating command event (%d).\n"), GetLastError());
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
 		CloseHandle(p->hReadSem);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 		return FALSE;
 	}
 
 	p->commandMutex = CreateMutex(NULL, FALSE, COMMAND_MUTEX_NAME);
 	if (p->commandMutex == NULL) {
-		_tprintf("\nError creating command mutex");
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		_tprintf(TEXT("\nError creating command mutex.\n"));
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
 		CloseHandle(p->hReadSem);
 		CloseHandle(p->commandEvent);
-		return FALSE;
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 	}
 
 	p->hMutexPlay = CreateMutex(NULL, FALSE, MUTEX_NAME_PLAY);
 	if (p->hMutexPlay == NULL) {
-		_tprintf("\nError creating play mutex.\n");
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		_tprintf(TEXT("\nError creating play mutex.\n"));
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
 		CloseHandle(p->hReadSem);
 		CloseHandle(p->commandEvent);
+		CloseHandle(p->hMapFileMemory);
 		CloseHandle(p->commandMutex);
+		UnmapViewOfFile(p->sharedMemCommand);
 	}
 
 	return TRUE;
@@ -258,8 +328,10 @@ int _tmain(int argc, TCHAR** argv) {
 	WaitForSingleObject(executeCommandsThread, INFINITE);
 
 	// Closing of all the handles
-	UnmapViewOfFile(controlData.sharedMem);
-	CloseHandle(controlData.hMapFile);
+	UnmapViewOfFile(controlData.sharedMemCommand);
+	UnmapViewOfFile(controlData.sharedMemGame);
+	CloseHandle(controlData.hMapFileGame);
+	CloseHandle(controlData.hMapFileMemory);
 	CloseHandle(controlData.hMutex);
 	CloseHandle(controlData.hWriteSem);
 	CloseHandle(controlData.hReadSem);

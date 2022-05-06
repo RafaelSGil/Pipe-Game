@@ -7,7 +7,8 @@
 
 #define BUFFER 256
 #define SIZE_DWORD 257*(sizeof(DWORD))
-#define SHM_NAME TEXT("fmMsgSpace") // Name of the shared memory
+#define SHM_NAME_GAME TEXT("fmGameSpace") // Name of the shared memory for the game
+#define SHM_NAME_MESSAGE TEXT("fmMsgSpace") // Name of the shared memory for the message
 #define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
 #define MUTEX_NAME_PLAY TEXT("fmMutexPlay") // Name of the mutex   
 #define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
@@ -35,17 +36,23 @@ typedef struct _Registry{
 	TCHAR name[BUFFER];
 }Registry;
 
-typedef struct _SharedMem {
-	Game game[BUFFERSIZE];
-	DWORD commandMonitor;
-}SharedMem;
+typedef struct _SharedMemGame {
+	Game game;
+}SharedMemGame;
+
+typedef struct _SharedMemCommand {
+	DWORD commandMonitor[BUFFERSIZE];
+}SharedMemCommand;
+
 
 typedef struct _ControlData {
 	unsigned int shutdown; // Release
 	unsigned int id; // Id from the process
 	unsigned int count; // Counter for the items
-	HANDLE hMapFile; // Memory
-	SharedMem* sharedMem; // Shared memory of the game
+	HANDLE hMapFileGame; // Memory from the game
+	HANDLE hMapFileMemory; // Memory from the message
+	SharedMemGame* sharedMemGame; // Shared memory of the game
+	SharedMemCommand* sharedMemCommand; // Shared memory of the command from the monitor
 	HANDLE hMutex; // Mutex
 	HANDLE hMutexPlay;
 	HANDLE hWriteSem; // Light warns writting
@@ -64,7 +71,7 @@ DWORD WINAPI sendData(LPVOID p) {
 		WaitForSingleObject(data->hMutexPlay, INFINITE);
 		WaitForSingleObject(data->hWriteSem, INFINITE);
 		WaitForSingleObject(data->hMutex, INFINITE);
-		CopyMemory(&(data->sharedMem->game[i]), data->game, sizeof(Game));
+		CopyMemory(&(data->sharedMemGame->game), data->game, sizeof(Game));
 		i++;
 		if (i == BUFFERSIZE)
 			i = 0;
@@ -135,7 +142,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 	DWORD waterRow = data->game->begginingR;
 	DWORD waterColumns = data->game->begginingC;
-	TCHAR piece;
+	TCHAR piece = TEXT("");
 	DWORD win = 0;//while 0 game has no winner
 	DWORD begin = 0;//while 0 water has not started flowing
 	DWORD end = 0;//while 0 game has not finished
@@ -569,15 +576,20 @@ DWORD WINAPI waterFlow(LPVOID p) {
 DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 	DWORD command;
+	int i = 0;
+
 
 	do {
 		WaitForSingleObject(data->commandEvent, INFINITE);
 		WaitForSingleObject(data->commandMutex, INFINITE);
-		CopyMemory(&command, &(data->sharedMem->commandMonitor), sizeof(DWORD));
+		if (i == BUFFERSIZE)
+			i = 0;
+		CopyMemory(&command, &(data->sharedMemCommand->commandMonitor[i]), sizeof(DWORD));
+		i++;
 		ReleaseMutex(data->commandMutex);
 
 		if (command == 1) {
-			_tprintf(TEXT("TIME[%d]"), data->game->time);
+			_tprintf(TEXT("\nTIME LEFT: [%d]\n"), data->game->time);
 		}
 		if (command == 2) {
 			_tprintf(TEXT("insert"));
@@ -594,94 +606,126 @@ BOOL initMemAndSync(ControlData* p) {
 	BOOL firstProcess = FALSE;
 	_tprintf(TEXT("\n\nConfigs for the game initializing...\n"));
 
-	p->hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, SHM_NAME);
+	p->hMapFileGame = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, SHM_NAME_GAME);
 
-	if (p->hMapFile == NULL) { // Map
+	if (p->hMapFileGame == NULL) { // Map
 		firstProcess = TRUE;
-		p->hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(SharedMem), SHM_NAME);
+		p->hMapFileGame = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(SharedMemGame), SHM_NAME_GAME);
 
-		if (p->hMapFile == NULL) {
-			_tprintf(TEXT("\nErro CreateFileMapping (%d).\n"), GetLastError());
+		if (p->hMapFileGame == NULL) {
+			_tprintf(TEXT("\nError CreateFileMapping (%d).\n"), GetLastError());
 			return FALSE;
 		}
 	}
 
-	p->sharedMem = (SharedMem*)MapViewOfFile(p->hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SharedMem)); // Shared Memory
-	if (p->sharedMem == NULL) {
+	p->sharedMemGame = (SharedMemGame*)MapViewOfFile(p->hMapFileGame, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SharedMemGame)); // Shared Memory
+	if (p->sharedMemGame == NULL) {
 		_tprintf(TEXT("\nError: MapViewOfFile (%d)."), GetLastError());
-		CloseHandle(p->hMapFile);
+		CloseHandle(p->hMapFileGame);
 		return FALSE;
+	}
+
+	p->hMapFileMemory = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, SHM_NAME_MESSAGE);
+	if (p->hMapFileMemory == NULL) {
+		p->hMapFileMemory = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(SharedMemCommand), SHM_NAME_MESSAGE);
+
+		if (p->hMapFileMemory == NULL) {
+			_tprintf(TEXT("\nError CreateFileMapping (%d).\n"), GetLastError());
+			return FALSE;
+		}
+	}
+
+	p->sharedMemCommand = (SharedMemCommand*)MapViewOfFile(p->hMapFileMemory, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SharedMemCommand));
+	if (p->sharedMemCommand == NULL) {
+		_tprintf(TEXT("\nError: MapViewOfFile (%d)."), GetLastError());
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
+		CloseHandle(p->hMapFileMemory);
 	}
 
 	p->hMutex = CreateMutex(NULL, FALSE, MUTEX_NAME);
 	if (p->hMutex == NULL) {
 		_tprintf(TEXT("\nError creating mutex (%d).\n"), GetLastError());
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 		return FALSE;
 	}
 
 	p->hWriteSem = CreateSemaphore(NULL, BUFFERSIZE, BUFFERSIZE, SEM_WRITE_NAME);
 	if (p->hWriteSem == NULL) {
 		_tprintf(TEXT("\nError creating writting semaphore: (%d).\n"), GetLastError());
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 		return FALSE;
 	}
 
 	p->hReadSem = CreateSemaphore(NULL, BUFFERSIZE, BUFFERSIZE, SEM_READ_NAME);
 	if (p->hReadSem == NULL) {
 		_tprintf(TEXT("\nError creating reading semaphore (%d).\n"), GetLastError());
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 		return FALSE;
 	}
 
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		_tprintf(TEXT("\nYou cant run two servers at once, shutting down.\n"));
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
 		CloseHandle(p->hReadSem);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 		exit(1);
 	}
 
 	p->commandEvent = CreateEvent(NULL, TRUE, FALSE, EVENT_NAME);
-	if (p->hReadSem == NULL) {
-		_tprintf(TEXT("\nError creating reading semaphore (%d).\n"), GetLastError());
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+	if (p->commandEvent == NULL) {
+		_tprintf(TEXT("\nError creating command event (%d).\n"), GetLastError());
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
 		CloseHandle(p->hReadSem);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 		return FALSE;
 	}
 
 	p->commandMutex = CreateMutex(NULL, FALSE, COMMAND_MUTEX_NAME);
 	if (p->commandMutex == NULL) {
-		_tprintf("\nError creating command mutex.\n");
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		_tprintf(TEXT("\nError creating command mutex.\n"));
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
 		CloseHandle(p->hReadSem);
 		CloseHandle(p->commandEvent);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 	}
 
 	p->hMutexPlay = CreateMutex(NULL, FALSE, MUTEX_NAME_PLAY);
 	if (p->hMutexPlay == NULL) {
-		_tprintf("\nError creating play mutex.\n");
-		UnmapViewOfFile(p->sharedMem);
-		CloseHandle(p->hMapFile);
+		_tprintf(TEXT("\nError creating play mutex.\n"));
+		UnmapViewOfFile(p->sharedMemGame);
+		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMutex);
 		CloseHandle(p->hWriteSem);
 		CloseHandle(p->hReadSem);
 		CloseHandle(p->commandEvent);
 		CloseHandle(p->commandMutex);
+		CloseHandle(p->hMapFileMemory);
+		UnmapViewOfFile(p->sharedMemCommand);
 	}
 
 	return TRUE;
@@ -922,7 +966,7 @@ int _tmain(int argc, TCHAR** argv) {
 			break;
 
 		case 5:
-			play(&controlData, &waterFlowThread, &hThreadTime);
+			//play(&controlData, &waterFlowThread, &hThreadTime);
 		default: 
 			_tprintf(TEXT("\nCouldn´t recognize the command.\n"));
 			break;
@@ -937,13 +981,15 @@ int _tmain(int argc, TCHAR** argv) {
 
 	// Closing of all the handles
 	RegCloseKey(registry.key);
-	UnmapViewOfFile(controlData.sharedMem);
+	UnmapViewOfFile(controlData.sharedMemGame);
+	UnmapViewOfFile(controlData.sharedMemCommand);
 	CloseHandle(hThreadTime);
 	CloseHandle(hThreadSendDataToMonitor);
 	CloseHandle(receiveCommandsMonitorThread);
 	CloseHandle(controlData.commandMutex);
 	CloseHandle(controlData.commandEvent);
-	CloseHandle(controlData.hMapFile);
+	CloseHandle(controlData.hMapFileGame);
+	CloseHandle(controlData.hMapFileMemory);
 	CloseHandle(controlData.hMutexPlay);
 	CloseHandle(controlData.hMutex);
 	CloseHandle(controlData.hWriteSem);
