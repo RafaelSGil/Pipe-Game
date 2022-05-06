@@ -78,7 +78,6 @@ void showBoard(ControlData* data) {
 
 DWORD WINAPI receiveData(LPVOID p) {
 	ControlData* data = (ControlData*)p;
-	Game aux;
 	int i = 0;
 
 	while (1) {
@@ -96,19 +95,6 @@ DWORD WINAPI receiveData(LPVOID p) {
 	}
 }
 
-void sendCommand(ControlData* data, DWORD command) {
-	int i = 0;
-	WaitForSingleObject(data->commandMutex, INFINITE);
-	if (i == BUFFERSIZE)
-		i = 0;
-	CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(DWORD));
-	i++;
-	ReleaseMutex(data->commandMutex);
-	SetEvent(data->commandEvent);
-	Sleep(500);
-	ResetEvent(data->commandEvent);
-}
-
 DWORD WINAPI executeCommands(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 	TCHAR option[BUFFER] = TEXT(" ");
@@ -121,7 +107,6 @@ DWORD WINAPI executeCommands(LPVOID p) {
 		if (_tcscmp(option, TEXT("show")) == 0)
 			showBoard(data);
 		else if (_tcscmp(option, TEXT("faucet")) == 0) {
-			//sendCommand(data, 1);
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
 				i = 0;
@@ -130,10 +115,8 @@ DWORD WINAPI executeCommands(LPVOID p) {
 			i++;
 			ReleaseMutex(data->commandMutex);
 			SetEvent(data->commandEvent);
-			Sleep(500);
 			ResetEvent(data->commandEvent);
 		}else if (_tcscmp(option, TEXT("insert")) == 0) {
-			//sendCommand(data, 2);
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
 				i = 0;
@@ -142,10 +125,8 @@ DWORD WINAPI executeCommands(LPVOID p) {
 			i++;
 			ReleaseMutex(data->commandMutex);
 			SetEvent(data->commandEvent);
-			Sleep(500);
 			ResetEvent(data->commandEvent);
 		}else if (_tcscmp(option, TEXT("random")) == 0) {
-			//sendCommand(data, 3);
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
 				i = 0;
@@ -154,7 +135,6 @@ DWORD WINAPI executeCommands(LPVOID p) {
 			i++;
 			ReleaseMutex(data->commandMutex);
 			SetEvent(data->commandEvent);
-			Sleep(500);
 			ResetEvent(data->commandEvent);
 		}else {
 			_tprintf(TEXT("\nCouldnt recognize command.\n"));

@@ -1,4 +1,2 @@
 ﻿  monitor.c
-C:\Users\Hugo\Desktop\Pipe-Game\Monitor\monitor.c(81,7): warning C4101: 'aux': variável local não referenciada
-C:\Users\Hugo\Desktop\Pipe-Game\Monitor\monitor.c(165): warning C4716: 'executeCommands': deve retornar um valor
   Monitor.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Monitor.exe

@@ -1,8 +1,4 @@
 ﻿  server.c
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(111,13): warning C4018: '>=': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(116,12): warning C4018: '>=': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(120,17): warning C4018: '>=': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(125,15): warning C4018: '>=': incompatibilidade de signed/unsigned
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(161,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(164,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(170,83): warning C4047: '!=': 'int' difere em níveis de indireção de 'char [2]'
@@ -151,8 +147,7 @@ C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(547,167): warning C4047: '==': '
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(547,241): warning C4566: caractere representado por nome de caractere universal (UCN) '\u2503' não pode ser representado na página de código atual (1252)
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(547,246): warning C4047: '==': 'int' difere em níveis de indireção de 'char [2]'
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(549,80): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'char [2]'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(145,1): warning C4047: 'inicializando': 'TCHAR' difere em níveis de indireção de 'unsigned short [1]'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(904,26): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(603): warning C4716: 'receiveCommnadsMonitor': deve retornar um valor
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(145,1): warning C4047: 'inicializando': 'TCHAR' difere em níveis de indireção de 'unsigned short [2]'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(906,26): warning C4013: 'time' indefinido; assumindo extern retornando int
 C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(573): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
   Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe

@@ -95,9 +95,9 @@ DWORD WINAPI decreaseTime(LPVOID p) {
 }
 
 void play(ControlData* controlData, HANDLE* waterFlowThread, HANDLE* hThreadTime) {
-	int row = 50;
-	int column = 50;
-	int number = 0;
+	unsigned int row = 50;
+	unsigned int column = 50;
+	unsigned int number = 0;
 	TCHAR option[BUFFER];
 	
 	ResumeThread(&hThreadTime);
@@ -142,7 +142,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 	DWORD waterRow = data->game->begginingR;
 	DWORD waterColumns = data->game->begginingC;
-	TCHAR piece = TEXT("");
+	TCHAR piece = TEXT(" ");
 	DWORD win = 0;//while 0 game has no winner
 	DWORD begin = 0;//while 0 water has not started flowing
 	DWORD end = 0;//while 0 game has not finished
@@ -597,8 +597,10 @@ DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 		if (command == 3) {
 			_tprintf(TEXT("random"));
 		}
-		Sleep(1000);
 	} while (data->shutdown != 1);
+
+
+	return 1;
 
 }
 
