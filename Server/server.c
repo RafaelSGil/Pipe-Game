@@ -486,7 +486,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 					end = 1;
 				}
 				if (waterRow != 0) {
-					if (data->game->board[waterRow - 1][waterColumns] == TEXT('┏') || data->game->board[waterRow - 1][waterColumns] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┃')) {
+					if (data->game->board[waterRow - 1][waterColumns] == TEXT('┏') || data->game->board[waterRow - 1][waterColumns] == TEXT('┓') || data->game->board[waterRow][waterColumns - 1] == TEXT('┃')) {
 						//_tcscpy_s(&piece, sizeof(TCHAR*), &data->game->board[waterRow - 1][waterColumns]);
 						piece = data->game->board[waterRow - 1][waterColumns];
 						//_tcscpy_s(&data->game->board[waterRow - 1][waterColumns], sizeof(TCHAR), TEXT("*"));
