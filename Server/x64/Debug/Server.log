@@ -1,4 +1,4 @@
 ﻿  server.c
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(992,26): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(666): warning C4716: 'waterFlow': deve retornar um valor
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(986,26): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(660): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
   Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
