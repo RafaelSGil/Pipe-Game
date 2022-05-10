@@ -27,6 +27,7 @@ typedef struct _Game {
 	DWORD endR;
 	DWORD endC;
 	TCHAR pieces[6];
+	DWORD shutdown;
 }Game;
 
 typedef struct _Registry {
@@ -46,7 +47,6 @@ typedef struct _SharedMemCommand {
 
 
 typedef struct _ControlData {
-	unsigned int shutdown; // Release
 	unsigned int id; // Id from the process
 	unsigned int count; // Counter for the items
 	HANDLE hMapFileGame; // Memory from the game
@@ -80,7 +80,7 @@ DWORD WINAPI receiveData(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 
 	while (1) {
-		if (data->shutdown == 1)
+		if (data->game->shutdown == 1)
 			return 0;
 		WaitForSingleObject(data->hReadSem, INFINITE);
 		WaitForSingleObject(data->hMutex, INFINITE);
@@ -137,7 +137,7 @@ DWORD WINAPI executeCommands(LPVOID p) {
 		}
 	} while (_tcscmp(option, TEXT("exit")) != 0);
 
-	data->shutdown = 1;
+	data->game->shutdown = 1;
 	return 1;
 }
 
@@ -177,10 +177,11 @@ BOOL initMemAndSync(ControlData* p) {
 
 	p->sharedMemCommand = (SharedMemCommand*)MapViewOfFile(p->hMapFileMemory, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(SharedMemCommand));
 	if (p->sharedMemCommand == NULL) {
-		_tprintf(TEXT("\nError: MapViewOfFile (%d)."), GetLastError());
+		_tprintf(TEXT("\nError: MapViewOfFile (%d).\n"), GetLastError());
 		UnmapViewOfFile(p->sharedMemGame);
 		CloseHandle(p->hMapFileGame);
 		CloseHandle(p->hMapFileMemory);
+		return FALSE;
 	}
 
 	p->hMutex = CreateMutex(NULL, FALSE, MUTEX_NAME);
@@ -240,6 +241,7 @@ BOOL initMemAndSync(ControlData* p) {
 		CloseHandle(p->commandEvent);
 		CloseHandle(p->hMapFileMemory);
 		UnmapViewOfFile(p->sharedMemCommand);
+		return FALSE;
 	}
 
 	p->hMutexPlay = CreateMutex(NULL, FALSE, MUTEX_NAME_PLAY);
@@ -253,6 +255,7 @@ BOOL initMemAndSync(ControlData* p) {
 		CloseHandle(p->commandEvent);
 		CloseHandle(p->hMapFileMemory);
 		UnmapViewOfFile(p->sharedMemCommand);
+		return FALSE;
 	}
 
 	return TRUE;
@@ -273,7 +276,7 @@ int _tmain(int argc, TCHAR** argv) {
 	controlData.game = &game;
 	HANDLE hThreadReceiveDataFromServer;
 	HANDLE executeCommandsThread;
-	controlData.shutdown = 0;
+	controlData.game->shutdown = 0;
 	controlData.count = 0;
 
 	if (OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, SEM_WRITE_NAME) == NULL) {
@@ -298,9 +301,14 @@ int _tmain(int argc, TCHAR** argv) {
 	}
 
 	_tprintf(TEXT("Type in 'exit' to leave.\n"));
-
-	WaitForSingleObject(hThreadReceiveDataFromServer, INFINITE);
-	WaitForSingleObject(executeCommandsThread, INFINITE);
+	while (1) {
+		if (controlData.game->shutdown == 1) {
+			_tprintf(TEXT("\nShutting down...\n"));
+			break;
+		}
+	}
+	//WaitForSingleObject(hThreadReceiveDataFromServer, INFINITE);
+	//WaitForSingleObject(executeCommandsThread, INFINITE);
 
 	// Closing of all the handles
 	UnmapViewOfFile(controlData.sharedMemCommand);
