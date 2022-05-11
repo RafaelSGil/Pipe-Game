@@ -28,7 +28,15 @@ typedef struct _Game {
 	DWORD endC;
 	TCHAR pieces[6];
 	DWORD shutdown;
+	BOOLEAN random;
+	DWORD index;
 }Game;
+
+typedef struct _Command{
+	DWORD command;
+	DWORD parameter;
+	DWORD parameter1;
+}Command;
 
 typedef struct _Registry {
 	HKEY key;
@@ -42,7 +50,7 @@ typedef struct _SharedMemGame {
 }SharedMemGame;
 
 typedef struct _SharedMemCommand {
-	DWORD commandMonitor[BUFFERSIZE];
+	Command commandMonitor[BUFFERSIZE];
 }SharedMemCommand;
 
 
@@ -54,7 +62,6 @@ typedef struct _ControlData {
 	SharedMemGame* sharedMemGame; // Shared memory of the game
 	SharedMemCommand* sharedMemCommand; // Shared memory of the command from the monitor
 	HANDLE hMutex; // Mutex
-	HANDLE hMutexPlay;
 	HANDLE hWriteSem; // Light warns writting
 	HANDLE hReadSem; // Light warns reading 
 	HANDLE commandEvent; //event used to coordinate commands received
@@ -64,14 +71,14 @@ typedef struct _ControlData {
 
 void showBoard(ControlData* data) {
 	WaitForSingleObject(data->hMutex, INFINITE);
+	_tprintf(TEXT("\n\nTime: [%d]\n\n"), data->game->time);
 	for (DWORD i = 0; i < data->game->rows; i++)
 	{
-		
 		_tprintf(TEXT("\n"));
 		for (DWORD j = 0; j < data->game->columns; j++)
 			_tprintf(TEXT("%c "), data->game->board[i][j]);
 	}
-	_tprintf(TEXT("\n"));
+	_tprintf(TEXT("\n\n"));
 	ReleaseMutex(data->hMutex);
 }
 
@@ -93,41 +100,66 @@ DWORD WINAPI receiveData(LPVOID p) {
 
 DWORD WINAPI executeCommands(LPVOID p) {
 	ControlData* data = (ControlData*)p;
+	TCHAR* token = NULL;
+	TCHAR* nextToken = NULL;
 	TCHAR option[BUFFER] = TEXT(" ");
-	DWORD command;
+	
+	Command command;
+	command.command = 0;
+	command.parameter = 0;
+	command.parameter1 = 0;
 	int i = 0;
 
 	do {
+		_tprintf(TEXT("\nCommands\n"));
+		_tprintf(TEXT("\n1 - show"));
+		_tprintf(TEXT("\n2 - delay 'time'"));
+		_tprintf(TEXT("\n3 - insert 'row' 'column'"));
+		_tprintf(TEXT("\n4 - random"));
+		_tprintf(TEXT("\n5 - exit\n\nCommand:"));
 		_getts_s(option, _countof(option));
 
-		if (_tcscmp(option, TEXT("show")) == 0)
+		token = _tcstok_s(option, TEXT(" "), &nextToken);
+
+		if (_tcscmp(token, TEXT("show")) == 0)
 			showBoard(data);
-		else if (_tcscmp(option, TEXT("faucet")) == 0) {
+		else if (_tcscmp(option, TEXT("delay")) == 0) {
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
 				i = 0;
-			command = 1;
-			CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(DWORD));
+			command.command = 1;
+			token = _tcstok_s(NULL, TEXT(" "), &nextToken);
+			if(token != NULL)
+				command.parameter = _ttoi(token);
+			if(command.parameter != 0 && token != NULL)
+				CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(Command));
 			i++;
 			ReleaseMutex(data->commandMutex);
 			SetEvent(data->commandEvent);
 			ResetEvent(data->commandEvent);
-		}else if (_tcscmp(option, TEXT("insert")) == 0) {
+		}else if (_tcscmp(token, TEXT("insert")) == 0) {
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
 				i = 0;
-			command = 2;
-			CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(DWORD));
+			command.command = 2;
+			token = _tcstok_s(NULL, TEXT(" "), &nextToken);
+			if (token != NULL)
+				command.parameter = _ttoi(token);
+			token = _tcstok_s(NULL, TEXT(" "), &nextToken);
+			if (token != NULL)
+				command.parameter1 = _ttoi(token);
+			if(token != NULL)
+				CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(Command));
 			i++;
 			ReleaseMutex(data->commandMutex);
 			SetEvent(data->commandEvent);
 			ResetEvent(data->commandEvent);
-		}else if (_tcscmp(option, TEXT("random")) == 0) {
+		}else if (_tcscmp(token, TEXT("random")) == 0) {
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
 				i = 0;
-			command = 3;
-			CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(DWORD));
+			command.command = 3;
+			CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(Command));
 			i++;
 			ReleaseMutex(data->commandMutex);
 			SetEvent(data->commandEvent);
@@ -243,21 +275,6 @@ BOOL initMemAndSync(ControlData* p) {
 		UnmapViewOfFile(p->sharedMemCommand);
 		return FALSE;
 	}
-
-	p->hMutexPlay = CreateMutex(NULL, FALSE, MUTEX_NAME_PLAY);
-	if (p->hMutexPlay == NULL) {
-		_tprintf(TEXT("\nError creating play mutex.\n"));
-		UnmapViewOfFile(p->sharedMemGame);
-		CloseHandle(p->hMapFileGame);
-		CloseHandle(p->hMutex);
-		CloseHandle(p->hWriteSem);
-		CloseHandle(p->hReadSem);
-		CloseHandle(p->commandEvent);
-		CloseHandle(p->hMapFileMemory);
-		UnmapViewOfFile(p->sharedMemCommand);
-		return FALSE;
-	}
-
 	return TRUE;
 }
 
@@ -300,7 +317,6 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 
-	_tprintf(TEXT("Type in 'exit' to leave.\n"));
 	while (1) {
 		if (controlData.game->shutdown == 1) {
 			_tprintf(TEXT("\nShutting down...\n"));
