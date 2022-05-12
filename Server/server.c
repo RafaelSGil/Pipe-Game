@@ -31,6 +31,7 @@ typedef struct _Game{
 	DWORD shutdown;
 	BOOLEAN random;
 	DWORD index;
+	DWORD suspended;
 }Game;
 
 typedef struct _Command {
@@ -105,6 +106,9 @@ void play(ControlData* controlData) {
 
 
 	while (1) {
+		if (controlData->game->suspended == 1) {
+			break;
+		}
 		if(controlData->game->random)
 			number = rand() % 6;
 		else {
@@ -113,7 +117,7 @@ void play(ControlData* controlData) {
 			number = controlData->game->index;
 		}
 		
-		_tprintf(TEXT("\nPiece: %c\n"), controlData->game->pieces[number]);
+		_tprintf(TEXT("\n[-1 to suspend game] Piece: %c\n"), controlData->game->pieces[number]);
 
 
 		do {
@@ -122,8 +126,17 @@ void play(ControlData* controlData) {
 				_fgetts(option, BUFFER, stdin);
 				row = _ttoi(option);
 
+				if (row == -1) {
+					controlData->game->suspended = 1;
+					break;
+				}
+
 				if (row >= controlData->game->rows)
 					_tprintf(TEXT("\nRows have to be between 0 and %d\n"), controlData->game->rows);
+			}
+
+			if (controlData->game->suspended == 1) {
+				break;
 			}
 
 			while (column >= controlData->game->columns) {
@@ -131,8 +144,17 @@ void play(ControlData* controlData) {
 				_fgetts(option, BUFFER, stdin);
 				column = _ttoi(option);
 
+				if (column == -1) {
+					controlData->game->suspended = 1;
+					break;
+				}
+
 				if (column >= controlData->game->columns)
 					_tprintf(TEXT("\nColumn have to be between 0 and %d\n"), controlData->game->columns);
+			}
+
+			if (controlData->game->suspended == 1) {
+				break;
 			}
 
 			if ((row == controlData->game->begginingR && column == controlData->game->begginingC) || (row == controlData->game->endR && column == controlData->game->endC)) {
@@ -141,9 +163,12 @@ void play(ControlData* controlData) {
 				column = 50;
 			}
 		} while ((row == controlData->game->begginingR && column == controlData->game->begginingC) || (row == controlData->game->endR && column == controlData->game->endC));
-		WaitForSingleObject(controlData->hMutex, INFINITE);
-		controlData->game->board[row][column] = controlData->game->pieces[number];
-		ReleaseMutex(controlData->hMutex);
+		
+		if (row != -1 && column != -1) {
+			WaitForSingleObject(controlData->hMutex, INFINITE);
+			controlData->game->board[row][column] = controlData->game->pieces[number];
+			ReleaseMutex(controlData->hMutex);
+		}
 		
 		controlData->game->index++;
 		row = 50;
@@ -626,7 +651,7 @@ DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 }
 
 DWORD setTime(ControlData* data, DWORD time){
-	data->game->time = time;;
+	data->game->time = time;
 	return 1;
 }
 
@@ -925,6 +950,7 @@ void startGame(ControlData* data) {
 	data->game->endC = randomColumnE;
 	data->game->random = TRUE;
 	data->game->index = 0;
+	data->game->suspended = 0;
 }
 
 int _tmain(int argc, TCHAR** argv) {
@@ -1003,6 +1029,11 @@ int _tmain(int argc, TCHAR** argv) {
 	}
 
 	while (_ttoi(option) != 4) {
+		if (controlData.game->suspended == 1) {
+			SuspendThread(hThreadTime);
+			SuspendThread(waterFlowThread);
+		}
+
 		_tprintf(TEXT("\n1 - List Players(in development)."));
 		_tprintf(TEXT("\n2 - Suspend Game(in development)."));
 		_tprintf(TEXT("\n3 - Resume Game(in development)."));
@@ -1013,12 +1044,13 @@ int _tmain(int argc, TCHAR** argv) {
 		switch (_ttoi(option)) {
 		case 2:
 			_tprintf(TEXT("\nGame suspended.\n"));
-			SuspendThread(hThreadTime);
-			SuspendThread(waterFlowThread);
+			controlData.game->suspended = 1;
 		case 3:
 			_tprintf(TEXT("\nGame resumed.\n"));
+			controlData.game->suspended = 0;
 			ResumeThread(hThreadTime);
 			ResumeThread(waterFlowThread);
+			play(&controlData);
 		case 4:
 			_tprintf(TEXT("\nClosing the application...\n"));
 			controlData.game->shutdown = 1;
