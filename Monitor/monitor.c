@@ -325,6 +325,7 @@ int _tmain(int argc, TCHAR** argv) {
 	}
 	//WaitForSingleObject(hThreadReceiveDataFromServer, INFINITE);
 	//WaitForSingleObject(executeCommandsThread, INFINITE);
+	showBoard(&controlData);
 
 	// Closing of all the handles
 	UnmapViewOfFile(controlData.sharedMemCommand);

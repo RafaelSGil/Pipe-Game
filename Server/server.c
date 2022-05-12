@@ -117,7 +117,7 @@ void play(ControlData* controlData) {
 			number = controlData->game->index;
 		}
 		
-		_tprintf(TEXT("\n[-1 to suspend game] Piece: %c\n"), controlData->game->pieces[number]);
+		_tprintf(TEXT("\n[-1 to suspend game]\n\nPiece: %c\n"), controlData->game->pieces[number]);
 
 
 		do {
@@ -196,7 +196,6 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				end = 1;
 				continue;
 			}
-
 			if (begin == 0) {
 				//first row, no border
 				if (waterRow == 0 && waterColumns != 0 && waterColumns != data->game->columns - 1) {
@@ -601,19 +600,18 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				continue;
 			}
 			ReleaseMutex(data->hMutex);
-			Sleep(3000);
 		}
 	}
 	if (end == 1 && win == 0) {
-		ReleaseMutex(data->hMutex);
 		_tprintf(TEXT("\n\nYOU LOST.\n\n"));
-		exit(1);
+		ReleaseMutex(data->hMutex);
+		return 1;
 	}
 	if (win == 1) {
-		ReleaseMutex(data->hMutex);
 		_tprintf(TEXT("\n\nYOU WON.\n\n"));
 		data->game->board[data->game->endR][data->game->endC] = TEXT('E');
-		exit(1);
+		ReleaseMutex(data->hMutex);
+		return 1;
 	}
 }
 
@@ -1068,7 +1066,6 @@ int _tmain(int argc, TCHAR** argv) {
 			break;
 		}
 	}
-	
 	// Waiting for the thread to end
 	//WaitForSingleObject(receiveCommandsMonitorThread, INFINITE);
 	//WaitForSingleObject(hThreadTime, INFINITE);

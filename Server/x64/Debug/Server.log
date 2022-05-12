@@ -1,10 +1,10 @@
 ﻿  server.c
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(637,11): warning C4013: 'setTime' indefinido; assumindo extern retornando int
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(640,12): warning C4013: 'setWalls' indefinido; assumindo extern retornando int
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(643,13): warning C4013: 'setRandom' indefinido; assumindo extern retornando int
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(653,45): warning C4142: 'setTime': redefinição benigna de tipo
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(658,60): warning C4142: 'setWalls': redefinição benigna de tipo
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(670,36): warning C4142: 'setRandom': redefinição benigna de tipo
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(978,26): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(618): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
-  Server.vcxproj -> C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Pipe Game\x64\Debug\Server.exe
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(635,11): warning C4013: 'setTime' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(638,12): warning C4013: 'setWalls' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(641,13): warning C4013: 'setRandom' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(651,45): warning C4142: 'setTime': redefinição benigna de tipo
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(656,60): warning C4142: 'setWalls': redefinição benigna de tipo
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(668,36): warning C4142: 'setRandom': redefinição benigna de tipo
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(976,26): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(616): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
+  Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
