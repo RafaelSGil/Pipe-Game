@@ -116,7 +116,7 @@ DWORD WINAPI executeCommands(LPVOID p) {
 		_tprintf(TEXT("\n2 - delay 'time'"));
 		_tprintf(TEXT("\n3 - insert 'row' 'column'"));
 		_tprintf(TEXT("\n4 - random"));
-		_tprintf(TEXT("\n5 - exit\n\nCommand:"));
+		_tprintf(TEXT("\n5 - exit\n\nCommand: "));
 		_getts_s(option, _countof(option));
 
 		token = _tcstok_s(option, TEXT(" "), &nextToken);

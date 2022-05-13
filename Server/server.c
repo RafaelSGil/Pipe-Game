@@ -94,6 +94,7 @@ DWORD WINAPI decreaseTime(LPVOID p) {
 			Sleep(1000);
 		}else
 			return 1;
+
 	}
 	return 0;
 }
@@ -190,7 +191,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 	while (end == 0) {
 		if (data->game->time == 0) {
-			WaitForSingleObject(data->hMutex, INFINITE);
+			WaitForSingleObject(data->hMutex, 1000);
 			if (waterRow == data->game->endR && waterColumns == data->game->endC) {
 				win = 1;
 				end = 1;
@@ -599,18 +600,19 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				}
 				continue;
 			}
-			ReleaseMutex(data->hMutex);
 		}
 	}
 	if (end == 1 && win == 0) {
 		_tprintf(TEXT("\n\nYOU LOST.\n\n"));
 		ReleaseMutex(data->hMutex);
+		data->game->shutdown = 1;
 		return 1;
 	}
 	if (win == 1) {
 		_tprintf(TEXT("\n\nYOU WON.\n\n"));
 		data->game->board[data->game->endR][data->game->endC] = TEXT('E');
 		ReleaseMutex(data->hMutex);
+		data->game->shutdown = 1;
 		return 1;
 	}
 }
@@ -622,26 +624,7 @@ DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 	int i = 0;
 
 
-	do {
-		WaitForSingleObject(data->commandEvent, INFINITE);
-		WaitForSingleObject(data->commandMutex, INFINITE);
-		if (i == BUFFERSIZE)
-			i = 0;
-		CopyMemory(&command, &(data->sharedMemCommand->commandMonitor[i]), sizeof(Command));
-		i++;
-		ReleaseMutex(data->commandMutex);
-
-		if (command.command == 1) {
-			setTime(data, command.parameter);
-		}
-		if (command.command == 2) {
-			setWalls(data, command.parameter, command.paramter1);
-		}
-		if (command.command == 3) {
-			setRandom(data);
-			_tprintf(TEXT("\n\nRandom pieces = %s\n"), data->game->random ? TEXT("TRUE") : TEXT("FALSE"));
-		}
-	} while (data->game->shutdown != 1);
+	
 
 
 	return 1;
@@ -1043,12 +1026,14 @@ int _tmain(int argc, TCHAR** argv) {
 		case 2:
 			_tprintf(TEXT("\nGame suspended.\n"));
 			controlData.game->suspended = 1;
+			break;
 		case 3:
 			_tprintf(TEXT("\nGame resumed.\n"));
 			controlData.game->suspended = 0;
 			ResumeThread(hThreadTime);
 			ResumeThread(waterFlowThread);
 			play(&controlData);
+			break;
 		case 4:
 			_tprintf(TEXT("\nClosing the application...\n"));
 			controlData.game->shutdown = 1;
@@ -1061,6 +1046,7 @@ int _tmain(int argc, TCHAR** argv) {
 			}
 			else
 				play(&controlData);
+			break;
 		default: 
 			_tprintf(TEXT("\nCouldn´t recognize the command.\n"));
 			break;
