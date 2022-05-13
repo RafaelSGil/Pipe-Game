@@ -1,5 +1,1 @@
-﻿  server.c
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(623,10): warning C4101: 'command': variável local não referenciada
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(959,26): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(618): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
-  Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
+﻿  Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe

@@ -30,6 +30,7 @@ typedef struct _Game {
 	DWORD shutdown;
 	BOOLEAN random;
 	DWORD index;
+	DWORD suspended;
 }Game;
 
 typedef struct _Command{
@@ -123,7 +124,7 @@ DWORD WINAPI executeCommands(LPVOID p) {
 
 		if (_tcscmp(token, TEXT("show")) == 0)
 			showBoard(data);
-		else if (_tcscmp(option, TEXT("delay")) == 0) {
+		else if (_tcscmp(token, TEXT("delay")) == 0) {
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
 				i = 0;

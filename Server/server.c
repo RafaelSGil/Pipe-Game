@@ -624,7 +624,26 @@ DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 	int i = 0;
 
 
-	
+	do {
+		WaitForSingleObject(data->commandEvent, INFINITE);
+		WaitForSingleObject(data->commandMutex, INFINITE);
+		if (i == BUFFERSIZE)
+			i = 0;
+		CopyMemory(&command, &(data->sharedMemCommand->commandMonitor[i]), sizeof(Command));
+		i++;
+		ReleaseMutex(data->commandMutex);
+
+		if (command.command == 1) {
+			setTime(data, command.parameter);
+		}
+		if (command.command == 2) {
+			setWalls(data, command.parameter, command.paramter1);
+		}
+		if (command.command == 3) {
+			setRandom(data);
+			_tprintf(TEXT("\n\nRandom pieces = %s\n"), data->game->random ? TEXT("TRUE") : TEXT("FALSE"));
+		}
+	} while (data->game->shutdown != 1);
 
 
 	return 1;
@@ -1009,36 +1028,32 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 
-	while (_ttoi(option) != 4) {
+	while (_ttoi(option) != 3) {
 		if (controlData.game->suspended == 1) {
 			SuspendThread(hThreadTime);
 			SuspendThread(waterFlowThread);
 		}
+		if (controlData.game->shutdown == 1)
+			break;
 
 		_tprintf(TEXT("\n1 - List Players(in development)."));
-		_tprintf(TEXT("\n2 - Suspend Game(in development)."));
-		_tprintf(TEXT("\n3 - Resume Game(in development)."));
-		_tprintf(TEXT("\n4 - Quit\n\nCommand: "));
+		_tprintf(TEXT("\n2 - Resume Game"));
+		_tprintf(TEXT("\n3 - Quit\n\nCommand: "));
 
 		_fgetts(option, BUFFER, stdin);
 
 		switch (_ttoi(option)) {
 		case 2:
-			_tprintf(TEXT("\nGame suspended.\n"));
-			controlData.game->suspended = 1;
-			break;
-		case 3:
 			_tprintf(TEXT("\nGame resumed.\n"));
 			controlData.game->suspended = 0;
 			ResumeThread(hThreadTime);
 			ResumeThread(waterFlowThread);
 			play(&controlData);
 			break;
-		case 4:
+		case 3:
 			_tprintf(TEXT("\nClosing the application...\n"));
 			controlData.game->shutdown = 1;
 			break;
-
 		case 5:
 			if(firstTime){
 				ResumeThread(hThreadTime);
