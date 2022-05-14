@@ -1,1 +1,10 @@
-﻿  Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe
+﻿  server.c
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(666,11): warning C4013: 'setTime' indefinido; assumindo extern retornando int
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(669,12): warning C4013: 'setWalls' indefinido; assumindo extern retornando int
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(672,13): warning C4013: 'setRandom' indefinido; assumindo extern retornando int
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(682,45): warning C4142: 'setTime': redefinição benigna de tipo
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(687,60): warning C4142: 'setWalls': redefinição benigna de tipo
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(699,36): warning C4142: 'setRandom': redefinição benigna de tipo
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(1007,26): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Server\server.c(647): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
+  Server.vcxproj -> C:\Users\Rafael\Desktop\GitHub\Pipe-Game\Pipe Game\x64\Debug\Server.exe
