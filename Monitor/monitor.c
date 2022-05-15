@@ -4,71 +4,12 @@
 #include <stdio.h>	
 #include <stdlib.h>
 #include <tchar.h>
+#include <stdbool.h>
 
-#define BUFFER 256
-#define SIZE_DWORD 257*(sizeof(DWORD))
-#define SHM_NAME_GAME TEXT("fmGameSpace") // Name of the shared memory for the game
-#define SHM_NAME_MESSAGE TEXT("fmMsgSpace") // Name of the shared memory for the message
-#define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
-#define MUTEX_NAME_PLAY TEXT("fmMutexPlay") // Name of the mutex   
-#define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
-#define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
-#define EVENT_NAME TEXT("COMMANDEVENT") //Name of the command event
-#define COMMAND_MUTEX_NAME TEXT("COMMANDMUTEX") //Name of the command mutex
-#define BUFFERSIZE 10
+#include "../Server/Names.h"
+#include "../Server/Game.h"
+#include "../Server/ControlData.h"
 
-typedef struct _Game {
-	TCHAR board[20][20];
-	DWORD rows;
-	DWORD columns;
-	DWORD time;
-	DWORD begginingR;
-	DWORD begginingC;
-	DWORD endR;
-	DWORD endC;
-	TCHAR pieces[6];
-	DWORD shutdown;
-	BOOLEAN random;
-	DWORD index;
-	DWORD suspended;
-}Game;
-
-typedef struct _Command{
-	DWORD command;
-	DWORD parameter;
-	DWORD parameter1;
-}Command;
-
-typedef struct _Registry {
-	HKEY key;
-	TCHAR keyCompletePath[BUFFER];
-	DWORD dposition;
-	TCHAR name[BUFFER];
-}Registry;
-
-typedef struct _SharedMemGame {
-	Game game;
-}SharedMemGame;
-
-typedef struct _SharedMemCommand {
-	Command commandMonitor[BUFFERSIZE];
-}SharedMemCommand;
-
-
-typedef struct _ControlData {
-	unsigned int id; // Id from the process
-	unsigned int count; // Counter for the items
-	HANDLE hMapFileGame; // Memory from the game
-	HANDLE hMapFileMemory; // Memory from the message
-	SharedMemGame* sharedMemGame; // Shared memory of the game
-	SharedMemCommand* sharedMemCommand; // Shared memory of the command from the monitor
-	HANDLE hMutex; // Mutex
-	HANDLE hWriteSem; // Light warns writting
-	HANDLE hReadSem; // Light warns reading 
-	HANDLE commandEvent; //event used to coordinate commands received
-	HANDLE commandMutex; //mutex used to coordinate commands
-	Game* game;
-}ControlData;
 
 void showBoard(ControlData* data) {
 	WaitForSingleObject(data->hMutex, INFINITE);
@@ -108,7 +49,7 @@ DWORD WINAPI executeCommands(LPVOID p) {
 	Command command;
 	command.command = 0;
 	command.parameter = 0;
-	command.parameter1 = 0;
+	command.paramter1 = 0;
 	int i = 0;
 
 	do {
@@ -148,7 +89,7 @@ DWORD WINAPI executeCommands(LPVOID p) {
 				command.parameter = _ttoi(token);
 			token = _tcstok_s(NULL, TEXT(" "), &nextToken);
 			if (token != NULL)
-				command.parameter1 = _ttoi(token);
+				command.paramter1 = _ttoi(token);
 			if(token != NULL)
 				CopyMemory(&(data->sharedMemCommand->commandMonitor[i]), &command, sizeof(Command));
 			i++;
@@ -295,7 +236,6 @@ int _tmain(int argc, TCHAR** argv) {
 	HANDLE hThreadReceiveDataFromServer;
 	HANDLE executeCommandsThread;
 	controlData.game->shutdown = 0;
-	controlData.count = 0;
 
 	if (OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, SEM_WRITE_NAME) == NULL) {
 		_tprintf(TEXT("\nCant launch monitor because server isnt running.\n"));

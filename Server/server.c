@@ -6,71 +6,10 @@
 #include <tchar.h>
 #include <stdbool.h>
 
-#define BUFFER 256
-#define SIZE_DWORD 257*(sizeof(DWORD))
-#define SHM_NAME_GAME TEXT("fmGameSpace") // Name of the shared memory for the game
-#define SHM_NAME_MESSAGE TEXT("fmMsgSpace") // Name of the shared memory for the message
-#define MUTEX_NAME TEXT("fmMutex") // Name of the mutex   
-#define MUTEX_NAME_PLAY TEXT("fmMutexPlay") // Name of the mutex   
-#define SEM_WRITE_NAME TEXT("SEM_WRITE") // Name of the writting lightning 
-#define SEM_READ_NAME TEXT("SEM_READ")	// Name of the reading lightning
-#define EVENT_NAME TEXT("COMMANDEVENT") //Name of the command event
-#define COMMAND_MUTEX_NAME TEXT("COMMANDMUTEX") //Name of the command mutex
-#define BUFFERSIZE 10
-
-typedef struct _Game{
-	TCHAR board[20][20];
-	DWORD rows;
-	DWORD columns;
-	DWORD time;
-	DWORD begginingR;
-	DWORD begginingC;
-	DWORD endR;
-	DWORD endC;
-	TCHAR pieces[6];
-	DWORD shutdown;
-	BOOLEAN random;
-	DWORD index;
-	DWORD suspended;
-}Game;
-
-typedef struct _Command {
-	DWORD command;
-	DWORD parameter;
-	DWORD paramter1;
-}Command;
-
-typedef struct _Registry{
-	HKEY key;
-	TCHAR keyCompletePath[BUFFER];
-	DWORD dposition;
-	TCHAR name[BUFFER];
-}Registry;
-
-typedef struct _SharedMemGame {
-	Game game;
-}SharedMemGame;
-
-typedef struct _SharedMemCommand {
-	Command commandMonitor[BUFFERSIZE];
-}SharedMemCommand;
-
-
-typedef struct _ControlData {
-	unsigned int id; // Id from the process
-	unsigned int count; // Counter for the items
-	HANDLE hMapFileGame; // Memory from the game
-	HANDLE hMapFileMemory; // Memory from the message
-	SharedMemGame* sharedMemGame; // Shared memory of the game
-	SharedMemCommand* sharedMemCommand; // Shared memory of the command from the monitor
-	HANDLE hMutex; // Mutex
-	HANDLE hWriteSem; // Light warns writting
-	HANDLE hReadSem; // Light warns reading 
-	HANDLE commandEvent; //event used to coordinate commands received
-	HANDLE commandMutex; //mutex used to coordinate commands
-	Game* game;
-}ControlData;
-
+#include "Names.h"
+#include "Registry.h"
+#include  "Game.h"
+#include "ControlData.h"
 
 DWORD WINAPI sendData(LPVOID p) {
 	ControlData* data = (ControlData*)p;
@@ -204,7 +143,6 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 	while (end == 0) {
 		if (data->game->time == 0) {
-			showBoard(data);
 
 			if (waterRow == data->game->endR && waterColumns == data->game->endC) {
 				win = 1;
@@ -453,7 +391,6 @@ DWORD WINAPI waterFlow(LPVOID p) {
 			}
 			//water is on a pipe
 			if (piece == TEXT('━')) {
-				_tprintf(TEXT("\n\n[DEBUG] I'm here!\n\n"));
 				if (waterColumns != data->game->columns - 1) {
 					if (data->game->board[waterRow][waterColumns + 1] != TEXT('B') && data->game->board[waterRow][waterColumns + 1] != TEXT('*')) {
 						if (data->game->board[waterRow][waterColumns + 1] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┛') || data->game->board[waterRow][waterColumns + 1] == TEXT('━') || data->game->board[waterRow][waterColumns + 1] == TEXT('E')) {
@@ -480,7 +417,6 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				continue;
 			}
 			if (piece == TEXT('┃')) {
-				_tprintf(TEXT("\n\n[DEBUG] I'm here!\n\n"));
 				if (waterRow != data->game->rows - 1) {
 					if (data->game->board[waterRow + 1][waterColumns] != TEXT('B') && data->game->board[waterRow + 1][waterColumns] != TEXT('*')) {
 						if (data->game->board[waterRow + 1][waterColumns] == TEXT('┛') || data->game->board[waterRow + 1][waterColumns] == TEXT('┗') || data->game->board[waterRow + 1][waterColumns] == TEXT('┃') || data->game->board[waterRow + 1][waterColumns] == TEXT('E')) {
@@ -507,7 +443,6 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				continue;
 			}
 			if (piece == TEXT('┏')) {
-				_tprintf(TEXT("\n\n[DEBUG] I'm here!\n\n"));
 				if (data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('B')) {
 					if (waterColumns != data->game->columns - 1) {
 						if (data->game->board[waterRow][waterColumns + 1] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┛') || data->game->board[waterRow][waterColumns + 1] == TEXT('━') || data->game->board[waterRow][waterColumns + 1] == TEXT('E')) {
@@ -538,7 +473,6 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				continue;
 			}
 			if (piece == TEXT('┓')) {
-				_tprintf(TEXT("\n\n[DEBUG] I'm here!\n\n"));
 				if (data->game->board[waterRow][waterColumns - 1] != TEXT('*') && data->game->board[waterRow][waterColumns - 1] != TEXT('B')) {
 					if (waterColumns != 0) {
 						if (data->game->board[waterRow][waterColumns - 1] == TEXT('┏') || data->game->board[waterRow][waterColumns - 1] == TEXT('┗') || data->game->board[waterRow][waterColumns - 1] == TEXT('━') || data->game->board[waterRow][waterColumns - 1] == TEXT('E')) {
@@ -598,7 +532,6 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				continue;
 			}
 			if (piece == TEXT('┗')) {
-				_tprintf(TEXT("\n\n[DEBUG] I'm here!\n\n"));
 				if (data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('B')) {
 					if (waterColumns != data->game->columns - 1) {
 						if (data->game->board[waterRow][waterColumns + 1] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┛') || data->game->board[waterRow][waterColumns + 1] == TEXT('━') || data->game->board[waterRow][waterColumns + 1] == TEXT('E')) {
@@ -1002,7 +935,6 @@ int _tmain(int argc, TCHAR** argv) {
 	HANDLE hThreadTime;
 	HANDLE waterFlowThread;
 	controlData.game->shutdown = 0; // shutdown
-	controlData.count = 0; // numero de itens
 	boolean firstTime = TRUE;
 	srand((unsigned int)time(NULL));
 
