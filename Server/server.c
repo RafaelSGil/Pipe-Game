@@ -159,6 +159,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
 							waterColumns++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 
@@ -169,6 +170,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
 							waterColumns--;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -178,6 +180,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
 							waterRow++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -194,6 +197,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
 							waterColumns++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -203,6 +207,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
 							waterRow++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -219,6 +224,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
 							waterColumns--;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -228,6 +234,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
 							waterRow++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -244,6 +251,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
 							waterColumns++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -253,6 +261,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
 							waterColumns--;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -262,6 +271,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
 							waterRow--;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -278,6 +288,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
 							waterColumns++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -287,6 +298,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
 							waterRow--;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -303,6 +315,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
 							waterColumns--;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -312,6 +325,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
 							waterRow--;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -328,6 +342,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
 							waterColumns++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -337,7 +352,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
 							waterRow--;
 							begin = 1;
-
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -347,6 +362,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
 							waterRow++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -363,6 +379,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
 							waterColumns--;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -372,6 +389,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
 							waterRow--;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -381,6 +399,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
 							waterRow++;
 							begin = 1;
+							Sleep(2000);
 							continue;
 						}
 					}
@@ -397,6 +416,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow][waterColumns + 1];
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
 							waterColumns++;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -408,6 +428,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow][waterColumns - 1];
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
 							waterColumns--;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -423,6 +444,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow + 1][waterColumns];
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
 							waterRow++;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -434,6 +456,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow - 1][waterColumns];
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
 							waterRow--;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -449,6 +472,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow][waterColumns + 1];
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
 							waterColumns++;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -462,6 +486,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow + 1][waterColumns];
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
 							waterRow++;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -479,6 +504,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow][waterColumns - 1];
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
 							waterColumns--;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -492,6 +518,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow + 1][waterColumns];
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
 							waterRow++;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -508,6 +535,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow][waterColumns - 1];
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
 							waterColumns--;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -521,6 +549,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow - 1][waterColumns];
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
 							waterRow--;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -538,6 +567,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow][waterColumns + 1];
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
 							waterColumns++;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -552,6 +582,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							piece = data->game->board[waterRow - 1][waterColumns];
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
 							waterRow--;
+							Sleep(2000);
 							continue;
 						}
 						end = 1;
@@ -575,6 +606,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 		_tprintf(TEXT("\n\nYOU WON.\n\n"));
 		data->game->board[data->game->endR][data->game->endC] = TEXT('E');
 		showBoard(data);
+		Sleep(3000);
 		exit(1);
 	}
 }

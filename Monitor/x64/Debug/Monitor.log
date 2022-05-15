@@ -1,2 +1,3 @@
 ﻿  monitor.c
+C:\Users\Hugo\Desktop\Pipe-Game\Monitor\monitor.c(53): warning C4716: 'showBoardAlways': deve retornar um valor
   Monitor.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Monitor.exe

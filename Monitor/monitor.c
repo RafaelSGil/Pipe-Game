@@ -40,6 +40,18 @@ DWORD WINAPI receiveData(LPVOID p) {
 	}
 }
 
+DWORD WINAPI showBoardAlways(LPVOID p) {
+	ControlData* data = (ControlData*)p;
+	while (data->game->shutdown == 0) {
+		if (data->game->shutdown == 1)
+			break;
+		Sleep(2000);
+		system("cls");
+		showBoard(data);
+		_tprintf(TEXT("\n>"));
+	}
+}
+
 DWORD WINAPI executeCommands(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 	TCHAR* token = NULL;
@@ -53,19 +65,14 @@ DWORD WINAPI executeCommands(LPVOID p) {
 	int i = 0;
 
 	do {
-		_tprintf(TEXT("\nCommands\n"));
-		_tprintf(TEXT("\n1 - show"));
-		_tprintf(TEXT("\n2 - delay 'time'"));
-		_tprintf(TEXT("\n3 - insert 'row' 'column'"));
-		_tprintf(TEXT("\n4 - random"));
-		_tprintf(TEXT("\n5 - exit\n\nCommand: "));
+		
 		_getts_s(option, _countof(option));
 
 		token = _tcstok_s(option, TEXT(" "), &nextToken);
 
-		if (_tcscmp(token, TEXT("show")) == 0)
-			showBoard(data);
-		else if (_tcscmp(token, TEXT("delay")) == 0) {
+		//if (_tcscmp(token, TEXT("show")) == 0)
+			//showBoard(data);
+		if (_tcscmp(token, TEXT("delay")) == 0) {
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
 				i = 0;
@@ -106,7 +113,16 @@ DWORD WINAPI executeCommands(LPVOID p) {
 			ReleaseMutex(data->commandMutex);
 			SetEvent(data->commandEvent);
 			ResetEvent(data->commandEvent);
-		}else {
+		}
+		else if (_tcscmp(token, TEXT("help")) == 0) {
+			_tprintf(TEXT("\nCommands\n"));
+			_tprintf(TEXT("\n1 - show"));
+			_tprintf(TEXT("\n2 - delay 'time'"));
+			_tprintf(TEXT("\n3 - insert 'row' 'column'"));
+			_tprintf(TEXT("\n4 - random"));
+			_tprintf(TEXT("\n5 - exit\n\nCommand: "));
+		}
+		else {
 			_tprintf(TEXT("\nCouldnt recognize command.\n"));
 		}
 	} while (_tcscmp(option, TEXT("exit")) != 0);
@@ -235,6 +251,7 @@ int _tmain(int argc, TCHAR** argv) {
 	controlData.game = &game;
 	HANDLE hThreadReceiveDataFromServer;
 	HANDLE executeCommandsThread;
+	HANDLE showBoardThread;
 	controlData.game->shutdown = 0;
 
 	if (OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, SEM_WRITE_NAME) == NULL) {
@@ -258,6 +275,12 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 
+	showBoardThread = CreateThread(NULL, 0, showBoardAlways, &controlData, 0, NULL);
+	if (executeCommandsThread == NULL) {
+		_tprintf(TEXT("\nCouldnt create thread to show board.\n"));
+		exit(1);
+	}
+
 	while (1) {
 		if (controlData.game->shutdown == 1) {
 			_tprintf(TEXT("\nShutting down...\n"));
@@ -266,7 +289,6 @@ int _tmain(int argc, TCHAR** argv) {
 	}
 	//WaitForSingleObject(hThreadReceiveDataFromServer, INFINITE);
 	//WaitForSingleObject(executeCommandsThread, INFINITE);
-	showBoard(&controlData);
 
 	// Closing of all the handles
 	UnmapViewOfFile(controlData.sharedMemCommand);
