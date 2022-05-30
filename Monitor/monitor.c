@@ -287,8 +287,8 @@ int _tmain(int argc, TCHAR** argv) {
 			break;
 		}
 	}
-	//WaitForSingleObject(hThreadReceiveDataFromServer, INFINITE);
-	//WaitForSingleObject(executeCommandsThread, INFINITE);
+	// Waiting for the threads to end
+	WaitForMultipleObjects(3, hThreadReceiveDataFromServer, executeCommandsThread, showBoardThread, TRUE, 2000);
 
 	// Closing of all the handles
 	UnmapViewOfFile(controlData.sharedMemCommand);

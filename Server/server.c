@@ -1060,11 +1060,8 @@ int _tmain(int argc, TCHAR** argv) {
 			break;
 		}
 	}
-	// Waiting for the thread to end
-	//WaitForSingleObject(receiveCommandsMonitorThread, INFINITE);
-	//WaitForSingleObject(hThreadTime, INFINITE);
-	//WaitForSingleObject(hThreadSendDataToMonitor, INFINITE);
-	//WaitForSingleObject(waterFlowThread, INFINITE);
+	// Waiting for the threads to end
+	WaitForMultipleObjects(4, receiveCommandsMonitorThread, hThreadTime, hThreadSendDataToMonitor, waterFlowThread, TRUE, 2000);
 
 
 	// Closing of all the handles
