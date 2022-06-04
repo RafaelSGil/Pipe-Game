@@ -1,1 +1,3 @@
-﻿
+﻿  cliente.c
+C:\Users\Hugo\Desktop\Pipe-Game\Client\cliente.c(47,49): warning C4267: 'função': conversão de 'size_t' para 'DWORD', possível perda de dados
+  Client.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Client.exe

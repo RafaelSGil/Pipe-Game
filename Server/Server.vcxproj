@@ -148,6 +148,7 @@
     <ClInclude Include="ControlData.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Names.h" />
+    <ClInclude Include="Pipes.h" />
     <ClInclude Include="Registry.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

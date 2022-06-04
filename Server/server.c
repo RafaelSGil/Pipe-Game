@@ -10,6 +10,39 @@
 #include "Registry.h"
 #include  "Game.h"
 #include "ControlData.h"
+#include "Pipes.h"
+
+DWORD WINAPI playThread(LPVOID* param) {
+	TCHAR bufSent[256];
+	TCHAR bufReceived[256];
+	DWORD n;
+	int i;
+	BOOL ret;
+	threadData* dados = (threadData*)param;
+
+	do {
+		_tprintf(_T("[ESCRITOR] Frase: "));
+		_fgetts(bufSent, 256, stdin);
+		bufSent[_tcslen(bufSent) - 1] = '\0';
+		for (i = 0; i < N; i++) {
+			WaitForSingleObject(dados->hMutex, INFINITE);
+			if (dados->hPipes[i].activo) {
+				if (!WriteFile(dados->hPipes[i].hInstancia, &dados->game, sizeof(Game), &n, NULL))
+					_tprintf(_T("[ERRO] Escrever no pipe! (WriteFile)\n"));
+				else {
+					_tprintf(_T("[ESCRITOR] Enviei %d bytes ao leitor [%d]... (WriteFile)\n"), n, i);
+					ret = ReadFile(dados->hPipes[i].hInstancia, &dados->game, sizeof(Game), &n, NULL);
+					_tprintf(_T("[ESCRITOR] Recebi %d bytes: '%s'... (ReadFile)\n"), n, bufReceived);
+				}
+			}
+			ReleaseMutex(dados->hMutex);
+		}
+	} while (_tcscmp(bufReceived, TEXT("FIM")));
+	dados->terminar = 1;
+	for (i = 0; i < N; i++)
+		SetEvent(dados->hEvents[i]);
+	return 0;
+}
 
 DWORD WINAPI sendData(LPVOID p) {
 	ControlData* data = (ControlData*)p;
@@ -957,6 +990,7 @@ int _tmain(int argc, TCHAR** argv) {
 
 // Variables
 	Registry registry;
+	threadData dados;
 	Game game;
 	ControlData controlData;
 	controlData.game = &game;
@@ -965,7 +999,10 @@ int _tmain(int argc, TCHAR** argv) {
 	HANDLE hThreadSendDataToMonitor;
 	HANDLE receiveCommandsMonitorThread;
 	HANDLE hThreadTime;
+	int i, numClientes = 0;
+	DWORD offset, nBytes;
 	HANDLE waterFlowThread;
+	HANDLE hPipe, hThread, hEventTemp;
 	controlData.game->shutdown = 0; // shutdown
 	boolean firstTime = TRUE;
 	srand((unsigned int)time(NULL));
@@ -976,6 +1013,41 @@ int _tmain(int argc, TCHAR** argv) {
 	if (!initMemAndSync(&controlData)) {
 		_tprintf(_T("Error creating/opening shared memory and synchronization mechanisms.\n"));
 		exit(1);
+	}
+	dados.terminar = 0;
+	dados.hMutex = CreateMutex(NULL, FALSE, NULL);
+	if (dados.hMutex == NULL) {
+		_tprintf(_T("\n\nError during creation of Mutex to the thread %d.\n"), GetLastError());
+		exit(-1);
+	}
+
+	for (i = 0; i < N; i++) {
+		hEventTemp = CreateEvent(NULL, TRUE, FALSE, NULL);
+		if (hEventTemp == NULL) {
+			_tprintf(_T("\n\nError creating the event to the pipes %d.\n"), GetLastError());
+			exit(-1);
+		}
+		hPipe = CreateNamedPipe(PIPE_NAME, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, N, 256 * sizeof(TCHAR), 256 * sizeof(TCHAR), 1000, NULL);
+		if (hPipe == INVALID_HANDLE_VALUE) {
+			_tprintf(_T("\n\nError creating named pipe %d.\n"), GetLastError());
+			exit(-1);
+		}
+		ZeroMemory(&dados.hPipes[i].overlap, sizeof(dados.hPipes[i].overlap));
+		dados.hPipes[i].hInstancia = hPipe;
+		dados.hPipes[i].overlap.hEvent = hEventTemp;
+		dados.hEvents[i] = hEventTemp;
+		dados.hPipes[i].activo = FALSE;
+
+		if (ConnectNamedPipe(hPipe, &dados.hPipes[i].overlap)) {
+			_tprintf(_T("\n\nError connecting to cliente %d.\n"), GetLastError());
+			exit(-1);
+		}
+	}
+
+	hThread = CreateThread(NULL, 0, playThread, &dados, 0, NULL);
+	if (hThread == NULL) {
+		_tprintf(_T("\n\nError creating thread to play the game %d.\n"), GetLastError());
+		exit(-1);
 	}
 
 	if (argc != 4) {
@@ -1061,8 +1133,14 @@ int _tmain(int argc, TCHAR** argv) {
 		}
 	}
 	// Waiting for the threads to end
-	WaitForMultipleObjects(4, receiveCommandsMonitorThread, hThreadTime, hThreadSendDataToMonitor, waterFlowThread, TRUE, 2000);
-
+	WaitForMultipleObjects(5, receiveCommandsMonitorThread, hThreadTime, hThreadSendDataToMonitor, waterFlowThread, hThread,TRUE, 2000);
+	for (i = 0; i < N; i++) {
+		if (!DisconnectNamedPipe(dados.hPipes[i].hInstancia)) {
+			_tprintf(_T("\n\nError shutting down the pipe (%d).\n"), GetLastError());
+			exit(-1);
+		}
+		CloseHandle(dados.hPipes[i].hInstancia);
+	}
 
 	// Closing of all the handles
 	RegCloseKey(registry.key);
@@ -1072,6 +1150,7 @@ int _tmain(int argc, TCHAR** argv) {
 	CloseHandle(hThreadSendDataToMonitor);
 	CloseHandle(receiveCommandsMonitorThread);
 	CloseHandle(waterFlowThread);
+	CloseHandle(hThread);
 	CloseHandle(controlData.commandMutex);
 	CloseHandle(controlData.commandEvent);
 	CloseHandle(controlData.hMapFileGame);

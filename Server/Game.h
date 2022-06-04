@@ -15,6 +15,7 @@ typedef struct _Game {
 	BOOLEAN random;
 	DWORD index;
 	DWORD suspended;
+	TCHAR piece;
 }Game;
 #endif // !GAME
 
