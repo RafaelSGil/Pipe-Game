@@ -10,37 +10,31 @@
 #include "Registry.h"
 #include  "Game.h"
 #include "ControlData.h"
-#include "Pipes.h"
 
-DWORD WINAPI playThread(LPVOID* param) {
-	TCHAR bufSent[256];
-	TCHAR bufReceived[256];
+DWORD WINAPI ThreadMensagens(LPVOID* param) {
 	DWORD n;
 	int i;
 	BOOL ret;
-	threadData* dados = (threadData*)param;
+	ControlData* dados = (ControlData*)param;
 
 	do {
-		_tprintf(_T("[ESCRITOR] Frase: "));
-		_fgetts(bufSent, 256, stdin);
-		bufSent[_tcslen(bufSent) - 1] = '\0';
 		for (i = 0; i < N; i++) {
-			WaitForSingleObject(dados->hMutex, INFINITE);
-			if (dados->hPipes[i].activo) {
-				if (!WriteFile(dados->hPipes[i].hInstancia, &dados->game, sizeof(Game), &n, NULL))
+			WaitForSingleObject(dados->data->hMutex, INFINITE);
+			if (dados->data->hPipes[i].activo) {
+				if (!WriteFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL))
 					_tprintf(_T("[ERRO] Escrever no pipe! (WriteFile)\n"));
 				else {
 					_tprintf(_T("[ESCRITOR] Enviei %d bytes ao leitor [%d]... (WriteFile)\n"), n, i);
-					ret = ReadFile(dados->hPipes[i].hInstancia, &dados->game, sizeof(Game), &n, NULL);
-					_tprintf(_T("[ESCRITOR] Recebi %d bytes: '%s'... (ReadFile)\n"), n, bufReceived);
+					ret = ReadFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL);
+					_tprintf(_T("[ESCRITOR] Recebi %d bytes\n"), n);
 				}
 			}
-			ReleaseMutex(dados->hMutex);
+			ReleaseMutex(dados->data->hMutex);
 		}
-	} while (_tcscmp(bufReceived, TEXT("FIM")));
-	dados->terminar = 1;
+	} while (dados->game->shutdown == 0);
+	dados->data->terminar = 1;
 	for (i = 0; i < N; i++)
-		SetEvent(dados->hEvents[i]);
+		SetEvent(dados->data->hEvents[i]);
 	return 0;
 }
 
@@ -48,11 +42,11 @@ DWORD WINAPI sendData(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 
 	while (data->game->shutdown == 0) {
-			WaitForSingleObject(data->hWriteSem, INFINITE);
-			WaitForSingleObject(data->hMutex, INFINITE);
-			CopyMemory(&(data->sharedMemGame->game), data->game, sizeof(Game));
-			ReleaseMutex(data->hMutex);
-			ReleaseSemaphore(data->hReadSem, 1, NULL);
+		WaitForSingleObject(data->hWriteSem, INFINITE);
+		WaitForSingleObject(data->hMutex, INFINITE);
+		CopyMemory(&(data->sharedMemGame->game), data->game, sizeof(Game));
+		ReleaseMutex(data->hMutex);
+		ReleaseSemaphore(data->hReadSem, 1, NULL);
 	}
 	return 1;
 }
@@ -61,10 +55,11 @@ DWORD WINAPI decreaseTime(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 
 	while (data->game->shutdown == 0) {
-		if(data->game->time > 0){
+		if (data->game->time > 0) {
 			(data->game->time)--;
 			Sleep(1000);
-		}else
+		}
+		else
 			return 1;
 
 	}
@@ -82,14 +77,14 @@ void play(ControlData* controlData) {
 		if (controlData->game->suspended == 1) {
 			break;
 		}
-		if(controlData->game->random)
+		if (controlData->game->random)
 			number = rand() % 6;
 		else {
 			if (controlData->game->index == 6)
 				controlData->game->index = 0;
 			number = controlData->game->index;
 		}
-		
+
 		_tprintf(TEXT("\n[-1 to suspend game]\n\nPiece: %c\n"), controlData->game->pieces[number]);
 
 
@@ -136,17 +131,17 @@ void play(ControlData* controlData) {
 				column = 50;
 			}
 		} while ((row == controlData->game->begginingR && column == controlData->game->begginingC) || (row == controlData->game->endR && column == controlData->game->endC));
-		
+
 		if (row != -1 && column != -1) {
 			WaitForSingleObject(controlData->hMutex, INFINITE);
 			controlData->game->board[row][column] = controlData->game->pieces[number];
 			ReleaseMutex(controlData->hMutex);
 		}
-		
+
 		controlData->game->index++;
 		row = 50;
 		column = 50;
-		
+
 	}
 }
 
@@ -635,7 +630,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 		showBoard(data);
 		exit(1);
 	}
-	if (win == 1 ) {
+	if (win == 1) {
 		_tprintf(TEXT("\n\nYOU WON.\n\n"));
 		data->game->board[data->game->endR][data->game->endC] = TEXT('E');
 		showBoard(data);
@@ -677,13 +672,13 @@ DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 
 }
 
-DWORD setTime(ControlData* data, DWORD time){
+DWORD setTime(ControlData* data, DWORD time) {
 	data->game->time = time;
 	return 1;
 }
 
 DWORD setWalls(ControlData* data, DWORD row, DWORD column) {
-	if ((row >= data->game->rows || row < 0) || (column >= data->game->rows || column < 0)){
+	if ((row >= data->game->rows || row < 0) || (column >= data->game->rows || column < 0)) {
 		_tprintf(TEXT("\nCant place a wall outside the board.\n"));
 		return 0;
 	}
@@ -691,7 +686,7 @@ DWORD setWalls(ControlData* data, DWORD row, DWORD column) {
 	data->game->board[row][column] = TEXT('P');
 	ReleaseMutex(data->hMutex);
 	return 1;
-	
+
 }
 
 DWORD setRandom(ControlData* data) {
@@ -818,11 +813,11 @@ BOOL initMemAndSync(ControlData* p) {
 		return FALSE;
 	}
 
-	for (DWORD i = 0; i < BUFFERSIZE; i++){
+	for (DWORD i = 0; i < BUFFERSIZE; i++) {
 		p->sharedMemCommand->commandMonitor->parameter = 0;
 		p->sharedMemCommand->commandMonitor->command = 0;
 	}
-		
+
 
 	return TRUE;
 }
@@ -857,7 +852,7 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 	long columnsRead = RegQueryValueEx(registry->key, TEXT("Columns"), NULL, NULL, (LPBYTE)&controlData->game->columns, &sizeDword);
 	long timeRead = RegQueryValueEx(registry->key, TEXT("Time"), NULL, NULL, (LPBYTE)&controlData->game->time, &sizeDword);
 
-	
+
 
 	if (rowsRead != ERROR_SUCCESS || columnsRead != ERROR_SUCCESS || timeRead != ERROR_SUCCESS) {
 		_tprintf(TEXT("\nCouldnt read the values for the pipe game."));
@@ -931,14 +926,15 @@ void startGame(ControlData* data) {
 	if (quadrante == 1) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRowE = (rand() % (data->game->rows /2) + (data->game->rows /2));
+			randomRowE = (rand() % (data->game->rows / 2) + (data->game->rows / 2));
 			randomColumnE = data->game->columns - 1;
 		}
 		else {
-			randomColumnE = (rand() % (data->game->columns/2) + (data->game->columns/2));
+			randomColumnE = (rand() % (data->game->columns / 2) + (data->game->columns / 2));
 			randomRowE = data->game->rows - 1;
 		}
-	}else if (quadrante == 2) {
+	}
+	else if (quadrante == 2) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
 			randomRowE = (rand() % (data->game->rows / 2) + (data->game->rows / 2));
@@ -946,29 +942,31 @@ void startGame(ControlData* data) {
 		}
 		else {
 			randomColumnE = rand() % (data->game->columns / 2);
-			randomRowE = data->game->rows-1;
+			randomRowE = data->game->rows - 1;
 		}
-	}else if (quadrante == 3) {
+	}
+	else if (quadrante == 3) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
 			randomRowE = rand() % (data->game->rows / 2);
-			randomColumnE = data->game->columns-1;
+			randomColumnE = data->game->columns - 1;
 		}
 		else {
-			randomColumnE = (rand() % (data->game->columns / 2) + (data->game->columns/2));
+			randomColumnE = (rand() % (data->game->columns / 2) + (data->game->columns / 2));
 			randomRowE = 0;
 		}
-	}else if(quadrante == 4) {
+	}
+	else if (quadrante == 4) {
 		number = rand() % 2 + 1;
 		if (number == 1) {
-			randomRowE = rand() % (data->game->rows/2);
+			randomRowE = rand() % (data->game->rows / 2);
 			randomColumnE = 0;
 		}
 		else {
 			randomColumnE = rand() % (data->game->columns / 2);
 			randomRowE = 0;
 		}
-		
+
 	}
 
 	data->game->board[randomRowB][randomColumnB] = 'B';
@@ -981,30 +979,31 @@ void startGame(ControlData* data) {
 }
 
 int _tmain(int argc, TCHAR** argv) {
-// Default code for windows32 API
+	// Default code for windows32 API
 #ifdef UNICODE
 	(void)_setmode(_fileno(stdin), _O_WTEXT);
 	(void)_setmode(_fileno(stdout), _O_WTEXT);
 	(void)_setmode(_fileno(stderr), _O_WTEXT);
 #endif
 
-// Variables
+	// Variables
 	Registry registry;
-	threadData dados;
 	Game game;
+	threadData data;
 	ControlData controlData;
 	controlData.game = &game;
+	controlData.data = &data;
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
 	TCHAR option[BUFFER];
 	HANDLE hThreadSendDataToMonitor;
 	HANDLE receiveCommandsMonitorThread;
 	HANDLE hThreadTime;
-	int i, numClientes = 0;
-	DWORD offset, nBytes;
 	HANDLE waterFlowThread;
 	HANDLE hPipe, hThread, hEventTemp;
+	int i, numClientes = 0;
 	controlData.game->shutdown = 0; // shutdown
 	boolean firstTime = TRUE;
+	DWORD offset, nBytes;
 	srand((unsigned int)time(NULL));
 
 
@@ -1014,58 +1013,59 @@ int _tmain(int argc, TCHAR** argv) {
 		_tprintf(_T("Error creating/opening shared memory and synchronization mechanisms.\n"));
 		exit(1);
 	}
-	dados.terminar = 0;
-	dados.hMutex = CreateMutex(NULL, FALSE, NULL);
-	if (dados.hMutex == NULL) {
-		_tprintf(_T("\n\nError during creation of Mutex to the thread %d.\n"), GetLastError());
-		exit(-1);
-	}
-
-	for (i = 0; i < N; i++) {
-		hEventTemp = CreateEvent(NULL, TRUE, FALSE, NULL);
-		if (hEventTemp == NULL) {
-			_tprintf(_T("\n\nError creating the event to the pipes %d.\n"), GetLastError());
-			exit(-1);
-		}
-		hPipe = CreateNamedPipe(PIPE_NAME, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, N, 256 * sizeof(TCHAR), 256 * sizeof(TCHAR), 1000, NULL);
-		if (hPipe == INVALID_HANDLE_VALUE) {
-			_tprintf(_T("\n\nError creating named pipe %d.\n"), GetLastError());
-			exit(-1);
-		}
-		ZeroMemory(&dados.hPipes[i].overlap, sizeof(dados.hPipes[i].overlap));
-		dados.hPipes[i].hInstancia = hPipe;
-		dados.hPipes[i].overlap.hEvent = hEventTemp;
-		dados.hEvents[i] = hEventTemp;
-		dados.hPipes[i].activo = FALSE;
-
-		if (ConnectNamedPipe(hPipe, &dados.hPipes[i].overlap)) {
-			_tprintf(_T("\n\nError connecting to cliente %d.\n"), GetLastError());
-			exit(-1);
-		}
-	}
-
-	hThread = CreateThread(NULL, 0, playThread, &dados, 0, NULL);
-	if (hThread == NULL) {
-		_tprintf(_T("\n\nError creating thread to play the game %d.\n"), GetLastError());
-		exit(-1);
-	}
 
 	if (argc != 4) {
 		if (!configGame(&registry, &controlData)) {
 			_tprintf(_T("\n\nError during configuration of the game.\n"));
 			exit(1);
 		}
-	}else {
+	}
+	else {
 		controlData.game->rows = _ttoi(argv[1]);
-		controlData.game->columns =  _ttoi(argv[2]);
-		controlData.game->time =  _ttoi(argv[3]);
+		controlData.game->columns = _ttoi(argv[2]);
+		controlData.game->time = _ttoi(argv[3]);
 
 		_tprintf(TEXT("\nBoard Loaded with [%d] rows and [%d] columns, water [%d] seconds.\n"), controlData.game->rows, controlData.game->columns, controlData.game->time);
 	}
 
-	initBoard(&controlData);	
-	
-	
+	controlData.data->terminar = 0;
+	controlData.data->hMutex = CreateMutex(NULL, FALSE, NULL);
+	if (controlData.data->hMutex == NULL) {
+		_tprintf(_T("\n[ERRO] Criar Mutex! (CreateMutex)"));
+		exit(-1);
+	}
+
+	initBoard(&controlData);
+	for (i = 0; i < N; i++) {
+		_tprintf(_T("[ESCRITOR] Criar uma cópia do pipe '%s'... (CreateNamedPipe)\n"), PIPE_NAME);
+		hEventTemp = CreateEvent(NULL, TRUE, FALSE, NULL);
+		if (hEventTemp == NULL) {
+			_tprintf(_T("[ERRO] Criar Evento! (CreateEvent)"));
+			exit(-1);
+		}
+		hPipe = CreateNamedPipe(PIPE_NAME, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, N, 256 * sizeof(TCHAR), 256 * sizeof(TCHAR), 1000, NULL);
+		if (hPipe == INVALID_HANDLE_VALUE) {
+			_tprintf(_T("[ERRO] Criar NamedPipe! (CreateNamedPipe)"));
+			exit(-1);
+		}
+		ZeroMemory(&controlData.data->hPipes[i].overlap, sizeof(controlData.data->hPipes[i].overlap));
+		controlData.data->hPipes[i].hInstancia = hPipe;
+		controlData.data->hPipes[i].overlap.hEvent = hEventTemp;
+		controlData.data->hEvents[i] = hEventTemp;
+		controlData.data->hPipes[i].activo = FALSE;
+
+		if (ConnectNamedPipe(hPipe, &controlData.data->hPipes[i].overlap)) {
+			_tprintf(_T("[ERRO] Ligação ao leitor! (ConnectNamedPipe)\n"));
+			exit(-1);
+		}
+	}
+	hThread = CreateThread(NULL, 0, ThreadMensagens, &controlData, 0, NULL);
+	if (hThread == NULL) {
+		_tprintf(_T("[ERRO] Criar Thread! (CreateThread)"));
+		exit(-1);
+	}
+
+
 	// Function to start the game
 	startGame(&controlData);
 
@@ -1075,7 +1075,7 @@ int _tmain(int argc, TCHAR** argv) {
 		_tprintf(TEXT("\nCouldnt create thread to send data to the monitor.\n"));
 		exit(1);
 	}
-	
+
 	receiveCommandsMonitorThread = CreateThread(NULL, 0, receiveCommnadsMonitor, &controlData, 0, NULL);
 	if (receiveCommandsMonitorThread == NULL) {
 		_tprintf(TEXT("\nCouldn't create thread to receive commands from monitor.\n"));
@@ -1093,7 +1093,7 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 
-	while (_ttoi(option) != 3) {
+	/*while (_ttoi(option) != 3) {
 		if (controlData.game->suspended == 1) {
 			SuspendThread(hThreadTime);
 			SuspendThread(waterFlowThread);
@@ -1120,27 +1120,46 @@ int _tmain(int argc, TCHAR** argv) {
 			controlData.game->shutdown = 1;
 			break;
 		case 5:
-			if(firstTime){
+			if (firstTime) {
 				ResumeThread(hThreadTime);
 				play(&controlData);
 			}
 			else
 				play(&controlData);
 			break;
-		default: 
+		default:
 			_tprintf(TEXT("\nCouldn´t recognize the command.\n"));
 			break;
 		}
+	}*/
+	while (!controlData.data->terminar && numClientes < N) {
+		_tprintf(_T("[ESCRITOR] Esperar ligação de um leitor...\n"));
+		DWORD result = WaitForMultipleObjects(N, controlData.data->hEvents, FALSE, INFINITE);
+		i = result - WAIT_OBJECT_0;
+		if (i >= 0 && i < N) {
+			_tprintf(_T("[ESCRITOR] Leitor %d chegou...\n"), i);
+
+			if (GetOverlappedResult(controlData.data->hPipes[i].hInstancia, &controlData.data->hPipes[i].overlap, &nBytes, FALSE)) {
+				ResetEvent(controlData.data->hEvents[i]);
+				WaitForSingleObject(controlData.data->hMutex, INFINITE);
+				controlData.data->hPipes[i].activo = TRUE;
+				ReleaseMutex(controlData.data->hMutex);
+			}
+			numClientes++;
+		}
 	}
-	// Waiting for the threads to end
-	WaitForMultipleObjects(5, receiveCommandsMonitorThread, hThreadTime, hThreadSendDataToMonitor, waterFlowThread, hThread,TRUE, 2000);
 	for (i = 0; i < N; i++) {
-		if (!DisconnectNamedPipe(dados.hPipes[i].hInstancia)) {
-			_tprintf(_T("\n\nError shutting down the pipe (%d).\n"), GetLastError());
+		_tprintf(_T("[ESCRITOR] Desligar o pipe (DisconnectNamedPipe)\n"));
+
+		if (!DisconnectNamedPipe(controlData.data->hPipes[i].hInstancia)) {
+			_tprintf(_T("[ERRO] Desligar o pipe! (DisconnectNamedPipe)"));
 			exit(-1);
 		}
-		CloseHandle(dados.hPipes[i].hInstancia);
+		CloseHandle(controlData.data->hPipes[i].hInstancia);
 	}
+	// Waiting for the threads to end
+	WaitForMultipleObjects(5, receiveCommandsMonitorThread, hThreadTime, hThreadSendDataToMonitor, waterFlowThread, hThread, TRUE, 2000);
+
 
 	// Closing of all the handles
 	RegCloseKey(registry.key);
@@ -1150,7 +1169,6 @@ int _tmain(int argc, TCHAR** argv) {
 	CloseHandle(hThreadSendDataToMonitor);
 	CloseHandle(receiveCommandsMonitorThread);
 	CloseHandle(waterFlowThread);
-	CloseHandle(hThread);
 	CloseHandle(controlData.commandMutex);
 	CloseHandle(controlData.commandEvent);
 	CloseHandle(controlData.hMapFileGame);

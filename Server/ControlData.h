@@ -2,6 +2,7 @@
 #ifndef CONTROLDATA
 #include <Windows.h>
 #include "Game.h"
+#include "Pipes.h"
 typedef struct _Command {
 	DWORD command;
 	DWORD parameter;
@@ -14,7 +15,7 @@ typedef struct _SharedMemGame {
 }SharedMemGame;
 
 typedef struct _SharedMemCommand {
-	Command commandMonitor[BUFFERSIZE];
+	Command commandMonitor[256];
 }SharedMemCommand;
 
 
@@ -29,6 +30,7 @@ typedef struct _ControlData {
 	HANDLE commandEvent; //event used to coordinate commands received
 	HANDLE commandMutex; //mutex used to coordinate commands
 	Game* game;
+	threadData* data;
 }ControlData;
 #endif // !1
 

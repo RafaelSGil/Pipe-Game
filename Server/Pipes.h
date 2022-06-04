@@ -16,6 +16,5 @@ typedef struct {
 	HANDLE hEvents[N];
 	HANDLE hMutex;
 	int terminar;
-	Game game;
 }threadData;
 #endif 

@@ -1,3 +1,2 @@
-﻿  cliente.c
-C:\Users\Hugo\Desktop\Pipe-Game\Client\cliente.c(47,49): warning C4267: 'função': conversão de 'size_t' para 'DWORD', possível perda de dados
-  Client.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Client.exe
+﻿MSVCRTD.lib(exe_main.obj) : error LNK2019: símbolo externo não resolvido, main, referenciado na função "int __cdecl invoke_main(void)" (?invoke_main@@YAHXZ)
+C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Client.exe : fatal error LNK1120: 1 externo não resolvidos
