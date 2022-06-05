@@ -5,7 +5,6 @@ typedef struct _Game {
 	TCHAR board[20][20];
 	DWORD rows;
 	DWORD columns;
-	DWORD time;
 	DWORD begginingR;
 	DWORD begginingC;
 	DWORD endR;
@@ -18,6 +17,7 @@ typedef struct _Game {
 	TCHAR piece;
 	DWORD row;
 	DWORD column;
+	DWORD time;
 }Game;
 #endif // !GAME
 

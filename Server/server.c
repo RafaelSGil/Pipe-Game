@@ -19,15 +19,26 @@ DWORD WINAPI ThreadMensagens(LPVOID* param) {
 	ControlData* dados = (ControlData*)param;
 
 	do {
+		if (dados->game->suspended == 1) {
+			break;
+		}
+		if (dados->game->random)
+			number = rand() % 6;
+		else {
+			if (dados->game->index == 6)
+				dados->game->index = 0;
+			number = dados->game->index;
+		}
+		dados->game->piece = dados->game->pieces[number];
 		for (i = 0; i < N; i++) {
 			WaitForSingleObject(dados->data->hMutex, INFINITE);
 			if (dados->data->hPipes[i].activo) {
 				if (!WriteFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL))
 					_tprintf(_T("[ERRO] Escrever no pipe! (WriteFile)\n"));
 				else {
-					_tprintf(_T("[ESCRITOR] Enviei %d bytes ao leitor [%d]... (WriteFile)\n"), n, i);
+					//_tprintf(_T("[ESCRITOR] Enviei %d bytes ao leitor [%d]... (WriteFile)\n"), n, i);
 					ret = ReadFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL);
-					_tprintf(_T("[ESCRITOR] Recebi %d bytes\n"), n);
+					//_tprintf(_T("[ESCRITOR] Recebi %d bytes\n"), n);
 					WaitForSingleObject(dados->hMutex, INFINITE);
 					dados->game->board[dados->game->row][dados->game->column] = dados->game->piece;
 					ReleaseMutex(dados->hMutex);
@@ -68,85 +79,6 @@ DWORD WINAPI decreaseTime(LPVOID p) {
 
 	}
 	return 0;
-}
-
-void play(ControlData* controlData) {
-	unsigned int row = 50;
-	unsigned int column = 50;
-	unsigned int number = 0;
-	TCHAR option[BUFFER];
-
-
-	while (1) {
-		if (controlData->game->suspended == 1) {
-			break;
-		}
-		if (controlData->game->random)
-			number = rand() % 6;
-		else {
-			if (controlData->game->index == 6)
-				controlData->game->index = 0;
-			number = controlData->game->index;
-		}
-
-		_tprintf(TEXT("\n[-1 to suspend game]\n\nPiece: %c\n"), controlData->game->pieces[number]);
-
-
-		do {
-			while (row >= controlData->game->rows) {
-				_tprintf(TEXT("\nRow: "));
-				_fgetts(option, BUFFER, stdin);
-				row = _ttoi(option);
-
-				if (row == -1) {
-					controlData->game->suspended = 1;
-					break;
-				}
-
-				if (row >= controlData->game->rows)
-					_tprintf(TEXT("\nRows have to be between 0 and %d\n"), controlData->game->rows);
-			}
-
-			if (controlData->game->suspended == 1) {
-				break;
-			}
-
-			while (column >= controlData->game->columns) {
-				_tprintf(TEXT("\nColumn: "));
-				_fgetts(option, BUFFER, stdin);
-				column = _ttoi(option);
-
-				if (column == -1) {
-					controlData->game->suspended = 1;
-					break;
-				}
-
-				if (column >= controlData->game->columns)
-					_tprintf(TEXT("\nColumn have to be between 0 and %d\n"), controlData->game->columns);
-			}
-
-			if (controlData->game->suspended == 1) {
-				break;
-			}
-
-			if ((row == controlData->game->begginingR && column == controlData->game->begginingC) || (row == controlData->game->endR && column == controlData->game->endC)) {
-				_tprintf(TEXT("\nYou cant play neither in the beginning or end position.\n"));
-				row = 50;
-				column = 50;
-			}
-		} while ((row == controlData->game->begginingR && column == controlData->game->begginingC) || (row == controlData->game->endR && column == controlData->game->endC));
-
-		if (row != -1 && column != -1) {
-			WaitForSingleObject(controlData->hMutex, INFINITE);
-			controlData->game->board[row][column] = controlData->game->pieces[number];
-			ReleaseMutex(controlData->hMutex);
-		}
-
-		controlData->game->index++;
-		row = 50;
-		column = 50;
-
-	}
 }
 
 void showBoard(ControlData* data) {
@@ -1008,6 +940,7 @@ int _tmain(int argc, TCHAR** argv) {
 	controlData.game->shutdown = 0; // shutdown
 	boolean firstTime = TRUE;
 	DWORD offset, nBytes;
+
 	srand((unsigned int)time(NULL));
 	controlData.game->random = FALSE;
 
@@ -1137,7 +1070,7 @@ int _tmain(int argc, TCHAR** argv) {
 			break;
 		}
 	}*/
-	while (!controlData.data->terminar && numClientes < N) {
+	while (controlData.game->shutdown == 0 && numClientes < N) {
 		_tprintf(_T("[ESCRITOR] Esperar ligação de um leitor...\n"));
 		DWORD result = WaitForMultipleObjects(N, controlData.data->hEvents, FALSE, INFINITE);
 		i = result - WAIT_OBJECT_0;
@@ -1154,10 +1087,9 @@ int _tmain(int argc, TCHAR** argv) {
 		}
 	}
 	for (i = 0; i < N; i++) {
-		_tprintf(_T("[ESCRITOR] Desligar o pipe (DisconnectNamedPipe)\n"));
-
+		_tprintf(_T("Shutting down the the pipe.\n"));
 		if (!DisconnectNamedPipe(controlData.data->hPipes[i].hInstancia)) {
-			_tprintf(_T("[ERRO] Desligar o pipe! (DisconnectNamedPipe)"));
+			_tprintf(_T("Error shutting down the pipe (DisconnectNamedPipe) %d.\n"), GetLastError());
 			exit(-1);
 		}
 		CloseHandle(controlData.data->hPipes[i].hInstancia);

@@ -1,18 +1,17 @@
 ﻿  server.c
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(18,6): warning C4101: 'number': variável local não referenciada
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(663,11): warning C4013: 'setTime' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(666,12): warning C4013: 'setWalls' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(669,13): warning C4013: 'setRandom' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(679,46): warning C4142: 'setTime': redefinição benigna de tipo
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(684,60): warning C4142: 'setWalls': redefinição benigna de tipo
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(696,36): warning C4142: 'setRandom': redefinição benigna de tipo
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1011,26): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1166,69): warning C4047: 'função': 'BOOL' difere em níveis de indireção de 'HANDLE'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1166,58): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 3
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1166,95): warning C4047: 'função': 'DWORD' difere em níveis de indireção de 'HANDLE'
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1166,71): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 4
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1166,97): warning C4020: 'WaitForMultipleObjects': muitos parâmetros reais
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1010,8): warning C4101: 'offset': variável local não referenciada
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1001,8): warning C4101: 'option': variável local não referenciada
-C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(644): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(595,11): warning C4013: 'setTime' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(598,12): warning C4013: 'setWalls' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(601,13): warning C4013: 'setRandom' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(611,46): warning C4142: 'setTime': redefinição benigna de tipo
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(616,60): warning C4142: 'setWalls': redefinição benigna de tipo
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(628,36): warning C4142: 'setRandom': redefinição benigna de tipo
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(944,26): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1098,69): warning C4047: 'função': 'BOOL' difere em níveis de indireção de 'HANDLE'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1098,58): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 3
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1098,95): warning C4047: 'função': 'DWORD' difere em níveis de indireção de 'HANDLE'
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1098,71): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 4
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(1098,97): warning C4020: 'WaitForMultipleObjects': muitos parâmetros reais
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(942,8): warning C4101: 'offset': variável local não referenciada
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(933,8): warning C4101: 'option': variável local não referenciada
+C:\Users\Hugo\Desktop\Pipe-Game\Server\server.c(576): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
   Server.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\Pipe Game\x64\Debug\Server.exe

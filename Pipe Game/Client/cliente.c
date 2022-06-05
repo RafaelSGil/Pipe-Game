@@ -6,8 +6,8 @@
 
 #include "../../Server/Pipes.h"
 #include "../../Server/ControlData.h"
+
 void showBoard(Game* data) {
-    _tprintf(TEXT("\n\nTime: [%d]\n\n"), data->time);
     for (DWORD i = 0; i < data->rows; i++)
     {
         _tprintf(TEXT("\n"));
@@ -28,6 +28,8 @@ int _tmain(int argc, LPTSTR argv[]) {
 	unsigned int column = 50;
 	unsigned int number = 0;
 	TCHAR option[256];
+	DWORD time;
+	game.shutdown = 0;
 
 #ifdef UNICODE
     (void)_setmode(_fileno(stdin), _O_WTEXT);
@@ -35,43 +37,28 @@ int _tmain(int argc, LPTSTR argv[]) {
     (void)_setmode(_fileno(stderr), _O_WTEXT);
 #endif
 
-    _tprintf(TEXT("[LEITOR] Esperar pelo pipe '%s' (WaitNamedPipe)\n"),
-        PIPE_NAME);
+	_tprintf(TEXT("\n-------------------CLIENT---------------\n"));
     if (!WaitNamedPipe(PIPE_NAME, NMPWAIT_WAIT_FOREVER)) {
-        _tprintf(TEXT("[ERRO] Ligar ao pipe '%s'! (WaitNamedPipe)\n"), PIPE_NAME);
+        _tprintf(TEXT("Error connecting to the pipe (WaitNamedPipe) (%d).\n"), GetLastError());
         exit(-1);
     }
-    _tprintf(TEXT("[LEITOR] Ligação ao pipe do escritor... (CreateFile)\n"));
+    _tprintf(TEXT("\nLoading client...\n"));
     hPipe = CreateFile(PIPE_NAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL, NULL);
     if (hPipe == NULL) {
-        _tprintf(TEXT("[ERRO] Ligar ao pipe '%s'! (CreateFile)\n"), PIPE_NAME);
+        _tprintf(TEXT("Error connecting to the pipe (CreateFile) (%d)\n"), GetLastError());
         exit(-1);
     }
-    _tprintf(TEXT("[LEITOR] Liguei-me...\n"));
+    _tprintf(TEXT("\nConnected...\n"));
 
-    while (1) {
+    while (game.shutdown == 0) {
         ret = ReadFile(hPipe, &game, sizeof(Game), &n, NULL);
         showBoard(&game);
         if (!ret || !n) {
             _tprintf(TEXT("[LEITOR] %d %d... (ReadFile)\n"), ret, n);
             break;
         }
-        _tprintf(TEXT("[LEITOR] Recebi %d bytes\n"), n);
-			if (game.suspended == 1) {
-				break;
-			}
-			if (game.random)
-				number = rand() % 6;
-			else {
-				if (game.index == 6)
-					game.index = 0;
-				number = game.index;
-			}
-
-			_tprintf(TEXT("\n[-1 to suspend game]\n\nPiece: %c\n"), game.pieces[number]);
-
-
+        _tprintf(TEXT("Received data...\n"));
 			do {
 				while (row >= game.rows) {
 					_tprintf(TEXT("\nRow: "));
@@ -126,9 +113,9 @@ int _tmain(int argc, LPTSTR argv[]) {
 			game.row = row;
 			game.column = column;
         if (!WriteFile(hPipe, &game, sizeof(Game), &n, NULL))
-            _tprintf(_T("[ERRO] Escrever no pipe! (WriteFile)\n"));
+            _tprintf(_T("Error writting on the Pipe...\n"));
         else
-            _tprintf(_T("[LEITOR] Enviei %d bytes ao escritor [%d]... (WriteFile)\n"), n, i);
+            _tprintf(_T("\nSent Data...\n"));
     }
     CloseHandle(hPipe);
     Sleep(200);
