@@ -16,6 +16,8 @@ typedef struct _Game {
 	DWORD index;
 	DWORD suspended;
 	TCHAR piece;
+	DWORD row;
+	DWORD column;
 }Game;
 #endif // !GAME
 

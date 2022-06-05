@@ -15,6 +15,7 @@ DWORD WINAPI ThreadMensagens(LPVOID* param) {
 	DWORD n;
 	int i;
 	BOOL ret;
+	int number;
 	ControlData* dados = (ControlData*)param;
 
 	do {
@@ -27,6 +28,9 @@ DWORD WINAPI ThreadMensagens(LPVOID* param) {
 					_tprintf(_T("[ESCRITOR] Enviei %d bytes ao leitor [%d]... (WriteFile)\n"), n, i);
 					ret = ReadFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL);
 					_tprintf(_T("[ESCRITOR] Recebi %d bytes\n"), n);
+					WaitForSingleObject(dados->hMutex, INFINITE);
+					dados->game->board[dados->game->row][dados->game->column] = dados->game->piece;
+					ReleaseMutex(dados->hMutex);
 				}
 			}
 			ReleaseMutex(dados->data->hMutex);
@@ -1005,6 +1009,7 @@ int _tmain(int argc, TCHAR** argv) {
 	boolean firstTime = TRUE;
 	DWORD offset, nBytes;
 	srand((unsigned int)time(NULL));
+	controlData.game->random = FALSE;
 
 
 
@@ -1138,7 +1143,7 @@ int _tmain(int argc, TCHAR** argv) {
 		i = result - WAIT_OBJECT_0;
 		if (i >= 0 && i < N) {
 			_tprintf(_T("[ESCRITOR] Leitor %d chegou...\n"), i);
-
+			ResumeThread(hThreadTime);
 			if (GetOverlappedResult(controlData.data->hPipes[i].hInstancia, &controlData.data->hPipes[i].overlap, &nBytes, FALSE)) {
 				ResetEvent(controlData.data->hEvents[i]);
 				WaitForSingleObject(controlData.data->hMutex, INFINITE);
