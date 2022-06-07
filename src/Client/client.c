@@ -8,7 +8,6 @@
 #include "../Server/Pipes.h"
 
 void showBoard(Game* data) {
-	_tprintf(_T("\n\nTIME: %d"), data->time);
 
 	for (DWORD i = 0; i < data->rows; i++)
 	{
@@ -30,7 +29,6 @@ int _tmain(int argc, LPTSTR argv[]) {
 	unsigned int column = 50;
 	unsigned int number = 0;
 	TCHAR option[256];
-	DWORD time;
 	game.shutdown = 0;
 
 #ifdef UNICODE
@@ -61,7 +59,7 @@ int _tmain(int argc, LPTSTR argv[]) {
 			break;
 		}
 		_tprintf(TEXT("Received data...\n"));
-		do {
+		do {                                  
 			while (row >= game.rows) {
 				_tprintf(TEXT("\nRow: "));
 				_fgetts(option, 256, stdin);
@@ -105,17 +103,11 @@ int _tmain(int argc, LPTSTR argv[]) {
 			}
 		} while ((row == game.begginingR && column == game.begginingC) || (row == game.endR && column == game.endC));
 
-		if (row != -1 && column != -1) {
-			game.board[row][column] = game.pieces[number];
-		}
-
+		game.row = row;
+		game.column = column;
 		game.index++;
 		row = 50;
 		column = 50;
-		game.row = row;
-		game.column = column;
-		game.board[game.row][game.column] = game.piece;
-		_tprintf(TEXT("Piece no board = %c"), game.board[game.row][game.column]);
 		if (!WriteFile(hPipe, &game, sizeof(Game), &n, NULL))
 			_tprintf(_T("Error writting on the Pipe...\n"));
 		else

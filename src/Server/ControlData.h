@@ -25,11 +25,12 @@ typedef struct _ControlData {
 	SharedMemGame* sharedMemGame; // Shared memory of the game
 	SharedMemCommand* sharedMemCommand; // Shared memory of the command from the monitor
 	HANDLE hMutex; // Mutex
-	HANDLE hWriteSem; // Light warns writting
-	HANDLE hReadSem; // Light warns reading 
+	HANDLE hWriteSem; // Semaphore warns writting
+	HANDLE hReadSem; // Semaphore warns reading 
 	HANDLE commandEvent; //event used to coordinate commands received
 	HANDLE commandMutex; //mutex used to coordinate commands
 	Game* game;
 	threadData* data;
+	DWORD time;
 }ControlData;
 #endif // !1

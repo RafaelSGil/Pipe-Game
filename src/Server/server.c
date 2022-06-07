@@ -13,7 +13,7 @@
 
 void showBoard(ControlData* data) {
 	WaitForSingleObject(data->hMutex, INFINITE);
-	_tprintf(TEXT("\n\nTime: [%d]\n\n"), data->game->time);
+	_tprintf(TEXT("\n\nTime: [%d]\n\n"), data->time);
 	for (DWORD i = 0; i < data->game->rows; i++)
 	{
 		_tprintf(TEXT("\n"));
@@ -51,6 +51,7 @@ DWORD WINAPI ThreadMensagens(LPVOID* param) {
 				else {
 					//_tprintf(_T("[ESCRITOR] Enviei %d bytes ao leitor [%d]... (WriteFile)\n"), n, i);
 					ret = ReadFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL);
+					dados->game->board[dados->game->row][dados->game->column] = dados->game->piece;
 					//_tprintf(_T("[ESCRITOR] Recebi %d bytes\n"), n);
 				}
 			}
@@ -69,6 +70,7 @@ DWORD WINAPI sendData(LPVOID p) {
 	while (data->game->shutdown == 0) {
 		WaitForSingleObject(data->hWriteSem, INFINITE);
 		WaitForSingleObject(data->hMutex, INFINITE);
+		data->game->time = data->time;
 		CopyMemory(&(data->sharedMemGame->game), data->game, sizeof(Game));
 		ReleaseMutex(data->hMutex);
 		ReleaseSemaphore(data->hReadSem, 1, NULL);
@@ -80,8 +82,8 @@ DWORD WINAPI decreaseTime(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 
 	while (data->game->shutdown == 0) {
-		if (data->game->time > 0) {
-			(data->game->time)--;
+		if (data->time > 0) {
+			(data->time)--;
 			Sleep(1000);
 		}
 		else
@@ -105,7 +107,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 	piece = data->game->board[waterRow][waterColumns];
 
 	while (end == 0) {
-		if (data->game->time == 0) {
+		if (data->time == 0) {
 
 			if (waterRow == data->game->endR && waterColumns == data->game->endC) {
 				win = 1;
@@ -608,7 +610,7 @@ DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 }
 
 DWORD setTime(ControlData* data, DWORD time) {
-	data->game->time = time;
+	data->time = time;
 	return 1;
 }
 
@@ -785,7 +787,7 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 	// Querys the values for the variables
 	long rowsRead = RegQueryValueEx(registry->key, TEXT("Rows"), NULL, NULL, (LPBYTE)&controlData->game->rows, &sizeDword);
 	long columnsRead = RegQueryValueEx(registry->key, TEXT("Columns"), NULL, NULL, (LPBYTE)&controlData->game->columns, &sizeDword);
-	long timeRead = RegQueryValueEx(registry->key, TEXT("Time"), NULL, NULL, (LPBYTE)&controlData->game->time, &sizeDword);
+	long timeRead = RegQueryValueEx(registry->key, TEXT("Time"), NULL, NULL, (LPBYTE)&controlData->time, &sizeDword);
 
 
 
@@ -793,7 +795,7 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 		_tprintf(TEXT("\nCouldnt read the values for the pipe game."));
 		return FALSE;
 	}
-	_tprintf(TEXT("\nBoard Loaded with [%d] rows and [%d] columns, water [%d] seconds.\n"), controlData->game->rows, controlData->game->columns, controlData->game->time);
+	_tprintf(TEXT("\nBoard Loaded with [%d] rows and [%d] columns, water [%d] seconds.\n"), controlData->game->rows, controlData->game->columns, controlData->time);
 	return TRUE;
 }
 
@@ -961,9 +963,9 @@ int _tmain(int argc, TCHAR** argv) {
 	else {
 		controlData.game->rows = _ttoi(argv[1]);
 		controlData.game->columns = _ttoi(argv[2]);
-		controlData.game->time = _ttoi(argv[3]);
+		controlData.time = _ttoi(argv[3]);
 
-		_tprintf(TEXT("\nBoard Loaded with [%d] rows and [%d] columns, water [%d] seconds.\n"), controlData.game->rows, controlData.game->columns, controlData.game->time);
+		_tprintf(TEXT("\nBoard Loaded with [%d] rows and [%d] columns, water [%d] seconds.\n"), controlData.game->rows, controlData.game->columns, controlData.time);
 	}
 
 	controlData.data->terminar = 0;

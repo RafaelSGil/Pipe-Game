@@ -45,7 +45,7 @@ DWORD WINAPI showBoardAlways(LPVOID p) {
 	while (data->game->shutdown == 0) {
 		if (data->game->shutdown == 1)
 			break;
-		Sleep(2000);
+		Sleep(1000);
 		system("cls");
 		showBoard(data);
 		_tprintf(TEXT("\n>"));

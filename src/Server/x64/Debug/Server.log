@@ -1,17 +1,17 @@
 ﻿  server.c
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(594,4): warning C4013: 'setTime' indefinido; assumindo extern retornando int
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(597,4): warning C4013: 'setWalls' indefinido; assumindo extern retornando int
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(600,4): warning C4013: 'setRandom' indefinido; assumindo extern retornando int
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(610,46): warning C4142: 'setTime': redefinição benigna de tipo
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(615,60): warning C4142: 'setWalls': redefinição benigna de tipo
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(627,36): warning C4142: 'setRandom': redefinição benigna de tipo
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(944,22): warning C4013: 'time' indefinido; assumindo extern retornando int
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1098,69): warning C4047: 'função': 'BOOL' difere em níveis de indireção de 'HANDLE'
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1098,58): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 3
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1098,95): warning C4047: 'função': 'DWORD' difere em níveis de indireção de 'HANDLE'
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1098,71): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 4
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1098,97): warning C4020: 'WaitForMultipleObjects': muitos parâmetros reais
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(941,8): warning C4101: 'offset': variável local não referenciada
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(932,8): warning C4101: 'option': variável local não referenciada
-C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(575): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(596,4): warning C4013: 'setTime' indefinido; assumindo extern retornando int
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(599,4): warning C4013: 'setWalls' indefinido; assumindo extern retornando int
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(602,4): warning C4013: 'setRandom' indefinido; assumindo extern retornando int
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(612,46): warning C4142: 'setTime': redefinição benigna de tipo
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(617,60): warning C4142: 'setWalls': redefinição benigna de tipo
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(629,36): warning C4142: 'setRandom': redefinição benigna de tipo
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(946,22): warning C4013: 'time' indefinido; assumindo extern retornando int
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1100,69): warning C4047: 'função': 'BOOL' difere em níveis de indireção de 'HANDLE'
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1100,58): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 3
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1100,95): warning C4047: 'função': 'DWORD' difere em níveis de indireção de 'HANDLE'
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1100,71): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 4
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(1100,97): warning C4020: 'WaitForMultipleObjects': muitos parâmetros reais
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(943,8): warning C4101: 'offset': variável local não referenciada
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(934,8): warning C4101: 'option': variável local não referenciada
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Server\server.c(577): warning C4715: 'waterFlow': nem todos os caminhos de controle retornam um valor
   Server.vcxproj -> C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\x64\Debug\Server.exe
