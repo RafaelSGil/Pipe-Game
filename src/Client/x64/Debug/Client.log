@@ -1,0 +1,3 @@
+﻿  client.c
+C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\Client\client.c(33,8): warning C4101: 'time': variável local não referenciada
+  Client.vcxproj -> C:\Users\Hugo Ferreira\Desktop\Pipe-Game\src\x64\Debug\Client.exe
