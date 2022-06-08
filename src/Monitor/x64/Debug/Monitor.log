@@ -1,7 +1,7 @@
 ﻿  monitor.c
-C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(293,79): warning C4047: 'função': 'BOOL' difere em níveis de indireção de 'HANDLE'
-C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(293,58): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 3
-C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(293,96): warning C4047: 'função': 'DWORD' difere em níveis de indireção de 'HANDLE'
-C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(293,81): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 4
-C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(293,98): warning C4020: 'WaitForMultipleObjects': muitos parâmetros reais
+C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(290,79): warning C4047: 'função': 'BOOL' difere em níveis de indireção de 'HANDLE'
+C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(290,58): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 3
+C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(290,96): warning C4047: 'função': 'DWORD' difere em níveis de indireção de 'HANDLE'
+C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(290,81): warning C4024: 'WaitForMultipleObjects': tipos diferentes para parâmetro formal e real 4
+C:\Users\Hugo\Desktop\Pipe-Game\src\Monitor\monitor.c(290,98): warning C4020: 'WaitForMultipleObjects': muitos parâmetros reais
   Monitor.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\src\x64\Debug\Monitor.exe

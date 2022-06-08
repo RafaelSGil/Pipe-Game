@@ -24,7 +24,7 @@ void showBoard(ControlData* data) {
 	ReleaseMutex(data->hMutex);
 }
 
-DWORD WINAPI ThreadMensagens(LPVOID* param) {
+DWORD WINAPI pipesThread(LPVOID* param) {
 	DWORD n;
 	int i;
 	BOOL ret;
@@ -32,9 +32,6 @@ DWORD WINAPI ThreadMensagens(LPVOID* param) {
 	ControlData* dados = (ControlData*)param;
 
 	do {
-		if (dados->game->suspended == 1) {
-			break;
-		}
 		if (dados->game->random)
 			number = rand() % 6;
 		else {
@@ -49,10 +46,7 @@ DWORD WINAPI ThreadMensagens(LPVOID* param) {
 				if (!WriteFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL))
 					_tprintf(_T("[ERRO] Escrever no pipe! (WriteFile)\n"));
 				else {
-					//_tprintf(_T("[ESCRITOR] Enviei %d bytes ao leitor [%d]... (WriteFile)\n"), n, i);
 					ret = ReadFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL);
-					dados->game->board[dados->game->row][dados->game->column] = dados->game->piece;
-					//_tprintf(_T("[ESCRITOR] Recebi %d bytes\n"), n);
 				}
 			}
 			ReleaseMutex(dados->data->hMutex);
@@ -118,7 +112,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 			if (begin == 0) {
 				//first row, no border
 				if (waterRow == 0 && waterColumns != 0 && waterColumns != data->game->columns - 1) {
-					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_')) {
+					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1 ] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[3]) {
 							piece = data->game->board[waterRow][waterColumns + 1];
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
@@ -129,7 +123,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 						}
 
 					}
-					if (data->game->board[waterRow][waterColumns - 1] != TEXT('_')) {
+					if (data->game->board[waterRow][waterColumns - 1] != TEXT('_') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[2]) {
 							piece = data->game->board[waterRow][waterColumns - 1];
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
@@ -139,7 +133,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_')) {
+					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[4] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[5]) {
 							piece = data->game->board[waterRow + 1][waterColumns];
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
@@ -156,7 +150,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 				//first row, left border
 				if (waterRow == 0 && waterColumns == 0) {
-					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_')) {
+					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[3]) {
 							piece = data->game->board[waterRow][waterColumns + 1];
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
@@ -166,7 +160,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_')) {
+ 					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[5]) {
 							piece = data->game->board[waterRow + 1][waterColumns];
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
@@ -183,7 +177,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 				//first row, right border
 				if (waterRow == 0 && waterColumns == data->game->columns - 1) {
-					if (data->game->board[waterRow][waterColumns - 1] != TEXT('_')) {
+					if (data->game->board[waterRow][waterColumns - 1] != TEXT('_') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[2]) {
 							piece = data->game->board[waterRow][waterColumns - 1];
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
@@ -193,7 +187,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_')) {
+					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[4]) {
 							piece = data->game->board[waterRow + 1][waterColumns];
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
@@ -210,7 +204,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 				//last row, no border
 				if (waterRow == data->game->rows - 1 && waterColumns != 0 && waterColumns != data->game->columns - 1) {
-					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_')) {
+					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
 							piece = data->game->board[waterRow][waterColumns + 1];
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
@@ -220,7 +214,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow][waterColumns - 1] != TEXT('_')) {
+					if (data->game->board[waterRow][waterColumns - 1] != TEXT('_') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
 							piece = data->game->board[waterRow][waterColumns - 1];
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
@@ -230,7 +224,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow - 1][waterColumns] != TEXT('_')) {
+					if (data->game->board[waterRow - 1][waterColumns] != TEXT('_') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[2] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
 							piece = data->game->board[waterRow - 1][waterColumns];
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
@@ -247,7 +241,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 				//last row, left border
 				if (waterRow == data->game->rows - 1 && waterColumns == 0) {
-					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_')) {
+					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
 							piece = data->game->board[waterRow][waterColumns + 1];
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
@@ -257,7 +251,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow - 1][waterColumns] != TEXT('_')) {
+					if (data->game->board[waterRow - 1][waterColumns] != TEXT('_') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[2]) {
 							piece = data->game->board[waterRow - 1][waterColumns];
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
@@ -274,7 +268,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 				//last row, right border
 				if (waterRow == data->game->rows - 1 && waterColumns == data->game->columns - 1) {
-					if (data->game->board[waterRow][waterColumns - 1] != '_') {
+					if (data->game->board[waterRow][waterColumns - 1] != '_' && data->game->board[waterRow][waterColumns - 1] != 'P') {
 						if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
 							piece = data->game->board[waterRow][waterColumns - 1];
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
@@ -284,7 +278,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow - 1][waterColumns] != '_') {
+					if (data->game->board[waterRow - 1][waterColumns] != '_' && data->game->board[waterRow - 1][waterColumns] != 'P') {
 						if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
 							piece = data->game->board[waterRow - 1][waterColumns];
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
@@ -301,7 +295,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 				//first column, no border
 				if (waterColumns == 0 && waterRow != 0 && waterRow != data->game->rows - 1) {
-					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_')) {
+					if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[3] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
 							piece = data->game->board[waterRow][waterColumns + 1];
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
@@ -311,7 +305,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow - 1][waterColumns] != TEXT('_')) {
+					if (data->game->board[waterRow - 1][waterColumns] != TEXT('_') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[2] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
 							piece = data->game->board[waterRow - 1][waterColumns];
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
@@ -321,7 +315,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_')) {
+					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[2]) {
 							piece = data->game->board[waterRow + 1][waterColumns];
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
@@ -338,7 +332,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 				//last column, no border
 				if (waterColumns == data->game->columns - 1 && waterRow != 0 && waterRow != data->game->rows - 1) {
-					if (data->game->board[waterRow][waterColumns - 1] != TEXT('_')) {
+					if (data->game->board[waterRow][waterColumns - 1] != TEXT('_') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[3] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
 							piece = data->game->board[waterRow][waterColumns - 1];
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
@@ -348,7 +342,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow - 1][waterColumns] != TEXT('_')) {
+					if (data->game->board[waterRow - 1][waterColumns] != TEXT('_') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
 							piece = data->game->board[waterRow - 1][waterColumns];
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
@@ -358,7 +352,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 							continue;
 						}
 					}
-					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_')) {
+					if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[4]) {
 							piece = data->game->board[waterRow + 1][waterColumns];
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
@@ -376,7 +370,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 			//water is on a pipe
 			if (piece == TEXT('━')) {
 				if (waterColumns != data->game->columns - 1) {
-					if (data->game->board[waterRow][waterColumns + 1] != TEXT('B') && data->game->board[waterRow][waterColumns + 1] != TEXT('*')) {
+					if (data->game->board[waterRow][waterColumns + 1] != TEXT('B') && data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns + 1] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┛') || data->game->board[waterRow][waterColumns + 1] == TEXT('━') || data->game->board[waterRow][waterColumns + 1] == TEXT('E')) {
 							piece = data->game->board[waterRow][waterColumns + 1];
 							data->game->board[waterRow][waterColumns + 1] = TEXT('*');
@@ -388,7 +382,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 					}
 				}
 				if (waterColumns != 0) {
-					if (data->game->board[waterRow][waterColumns - 1] != TEXT('B') && data->game->board[waterRow][waterColumns - 1] != TEXT('*')) {
+					if (data->game->board[waterRow][waterColumns - 1] != TEXT('B') && data->game->board[waterRow][waterColumns - 1] != TEXT('*') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
 						if (data->game->board[waterRow][waterColumns - 1] == TEXT('┏') || data->game->board[waterRow][waterColumns - 1] == TEXT('┗') || data->game->board[waterRow][waterColumns - 1] == TEXT('━') || data->game->board[waterRow][waterColumns - 1] == TEXT('E')) {
 							piece = data->game->board[waterRow][waterColumns - 1];
 							data->game->board[waterRow][waterColumns - 1] = TEXT('*');
@@ -404,7 +398,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 			}
 			if (piece == TEXT('┃')) {
 				if (waterRow != data->game->rows - 1) {
-					if (data->game->board[waterRow + 1][waterColumns] != TEXT('B') && data->game->board[waterRow + 1][waterColumns] != TEXT('*')) {
+					if (data->game->board[waterRow + 1][waterColumns] != TEXT('B') && data->game->board[waterRow + 1][waterColumns] != TEXT('*') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow + 1][waterColumns] == TEXT('┛') || data->game->board[waterRow + 1][waterColumns] == TEXT('┗') || data->game->board[waterRow + 1][waterColumns] == TEXT('┃') || data->game->board[waterRow + 1][waterColumns] == TEXT('E')) {
 							piece = data->game->board[waterRow + 1][waterColumns];
 							data->game->board[waterRow + 1][waterColumns] = TEXT('*');
@@ -416,7 +410,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 					}
 				}
 				if (waterRow != 0) {
-					if (data->game->board[waterRow - 1][waterColumns] != TEXT('B') && data->game->board[waterRow - 1][waterColumns] != TEXT('*')) {
+					if (data->game->board[waterRow - 1][waterColumns] != TEXT('B') && data->game->board[waterRow - 1][waterColumns] != TEXT('*') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
 						if (data->game->board[waterRow - 1][waterColumns] == TEXT('┏') || data->game->board[waterRow - 1][waterColumns] == TEXT('┓') || data->game->board[waterRow - 1][waterColumns] == TEXT('┃') || data->game->board[waterRow - 1][waterColumns] == TEXT('E')) {
 							piece = data->game->board[waterRow - 1][waterColumns];
 							data->game->board[waterRow - 1][waterColumns] = TEXT('*');
@@ -431,7 +425,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				continue;
 			}
 			if (piece == TEXT('┏')) {
-				if (data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('B')) {
+				if (data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('B') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
 					if (waterColumns != data->game->columns - 1) {
 						if (data->game->board[waterRow][waterColumns + 1] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┛') || data->game->board[waterRow][waterColumns + 1] == TEXT('━') || data->game->board[waterRow][waterColumns + 1] == TEXT('E')) {
 							piece = data->game->board[waterRow][waterColumns + 1];
@@ -445,7 +439,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 					continue;
 				}
-				if (data->game->board[waterRow + 1][waterColumns] != TEXT('*') && data->game->board[waterRow + 1][waterColumns] != TEXT('B')) {
+				if (data->game->board[waterRow + 1][waterColumns] != TEXT('*') && data->game->board[waterRow + 1][waterColumns] != TEXT('B') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
 					if (waterRow != data->game->rows - 1) {
 						if (data->game->board[waterRow + 1][waterColumns] == TEXT('┛') || data->game->board[waterRow + 1][waterColumns] == TEXT('┗') || data->game->board[waterRow + 1][waterColumns] == TEXT('┃') || data->game->board[waterRow + 1][waterColumns] == TEXT('E')) {
 							piece = data->game->board[waterRow + 1][waterColumns];
@@ -463,7 +457,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				continue;
 			}
 			if (piece == TEXT('┓')) {
-				if (data->game->board[waterRow][waterColumns - 1] != TEXT('*') && data->game->board[waterRow][waterColumns - 1] != TEXT('B')) {
+				if (data->game->board[waterRow][waterColumns - 1] != TEXT('*') && data->game->board[waterRow][waterColumns - 1] != TEXT('B') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
 					if (waterColumns != 0) {
 						if (data->game->board[waterRow][waterColumns - 1] == TEXT('┏') || data->game->board[waterRow][waterColumns - 1] == TEXT('┗') || data->game->board[waterRow][waterColumns - 1] == TEXT('━') || data->game->board[waterRow][waterColumns - 1] == TEXT('E')) {
 							piece = data->game->board[waterRow][waterColumns - 1];
@@ -477,7 +471,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 					continue;
 				}
-				if (data->game->board[waterRow + 1][waterColumns] != TEXT('*') && data->game->board[waterRow + 1][waterColumns] != TEXT('B')) {
+				if (data->game->board[waterRow + 1][waterColumns] != TEXT('*') && data->game->board[waterRow + 1][waterColumns] != TEXT('B') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
 					if (waterRow != data->game->rows - 1) {
 						if (data->game->board[waterRow + 1][waterColumns] == TEXT('┛') || data->game->board[waterRow + 1][waterColumns] == TEXT('┗') || data->game->board[waterRow + 1][waterColumns] == TEXT('┃') || data->game->board[waterRow + 1][waterColumns] == TEXT('E')) {
 							piece = data->game->board[waterRow + 1][waterColumns];
@@ -494,7 +488,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				continue;
 			}
 			if (piece == TEXT('┛')) {
-				if (data->game->board[waterRow][waterColumns - 1] != TEXT('*') && data->game->board[waterRow][waterColumns - 1] != TEXT('B')) {
+				if (data->game->board[waterRow][waterColumns - 1] != TEXT('*') && data->game->board[waterRow][waterColumns - 1] != TEXT('B') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
 					if (waterColumns != 0) {
 						if (data->game->board[waterRow][waterColumns - 1] == TEXT('┏') || data->game->board[waterRow][waterColumns - 1] == TEXT('┗') || data->game->board[waterRow][waterColumns - 1] == TEXT('━') || data->game->board[waterRow][waterColumns - 1] == TEXT('E')) {
 							piece = data->game->board[waterRow][waterColumns - 1];
@@ -508,7 +502,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 					continue;
 				}
-				if (data->game->board[waterRow - 1][waterColumns] != TEXT('*') && data->game->board[waterRow - 1][waterColumns] != TEXT('B')) {
+				if (data->game->board[waterRow - 1][waterColumns] != TEXT('*') && data->game->board[waterRow - 1][waterColumns] != TEXT('B') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
 					if (waterRow != 0) {
 						if (data->game->board[waterRow - 1][waterColumns] == TEXT('┓') || data->game->board[waterRow - 1][waterColumns] == TEXT('┏') || data->game->board[waterRow - 1][waterColumns] == TEXT('┃') || data->game->board[waterRow - 1][waterColumns] == TEXT('E')) {
 							piece = data->game->board[waterRow - 1][waterColumns];
@@ -526,7 +520,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 				continue;
 			}
 			if (piece == TEXT('┗')) {
-				if (data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('B')) {
+				if (data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('B') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
 					if (waterColumns != data->game->columns - 1) {
 						if (data->game->board[waterRow][waterColumns + 1] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┛') || data->game->board[waterRow][waterColumns + 1] == TEXT('━') || data->game->board[waterRow][waterColumns + 1] == TEXT('E')) {
 							piece = data->game->board[waterRow][waterColumns + 1];
@@ -541,7 +535,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 
 					continue;
 				}
-				if (data->game->board[waterRow - 1][waterColumns] != TEXT('*') && data->game->board[waterRow - 1][waterColumns] != TEXT('B')) {
+				if (data->game->board[waterRow - 1][waterColumns] != TEXT('*') && data->game->board[waterRow - 1][waterColumns] != TEXT('B') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
 					if (waterRow != 0) {
 						if (data->game->board[waterRow - 1][waterColumns] == TEXT('┓') || data->game->board[waterRow - 1][waterColumns] == TEXT('┏') || data->game->board[waterRow - 1][waterColumns] == TEXT('┃') || data->game->board[waterRow - 1][waterColumns] == TEXT('E')) {
 							piece = data->game->board[waterRow - 1][waterColumns];
@@ -912,7 +906,7 @@ void startGame(ControlData* data) {
 	data->game->board[randomRowE][randomColumnE] = 'E';
 	data->game->endR = randomRowE;
 	data->game->endC = randomColumnE;
-	data->game->random = TRUE;
+	data->game->random = FALSE;
 	data->game->index = 0;
 	data->game->suspended = 0;
 }
@@ -946,7 +940,6 @@ int _tmain(int argc, TCHAR** argv) {
 	DWORD trinco = 0;
 
 	srand((unsigned int)time(NULL));
-	controlData.game->random = FALSE;
 
 
 
@@ -1001,7 +994,7 @@ int _tmain(int argc, TCHAR** argv) {
 			exit(-1);
 		}
 	}
-	hThread = CreateThread(NULL, 0, ThreadMensagens, &controlData, 0, NULL);
+	hThread = CreateThread(NULL, 0, pipesThread, &controlData, 0, NULL);
 	if (hThread == NULL) {
 		_tprintf(_T("\nError creating the thread for the named pipes.\n"));
 		exit(-1);
@@ -1035,52 +1028,14 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 
-	/*while (_ttoi(option) != 3) {
-		if (controlData.game->suspended == 1) {
-			SuspendThread(hThreadTime);
-			SuspendThread(waterFlowThread);
-		}
-		if (controlData.game->shutdown == 1)
-			break;
-
-		_tprintf(TEXT("\n1 - List Players(in development)."));
-		_tprintf(TEXT("\n2 - Resume Game"));
-		_tprintf(TEXT("\n3 - Quit\n\nCommand: "));
-
-		_fgetts(option, BUFFER, stdin);
-
-		switch (_ttoi(option)) {
-		case 2:
-			_tprintf(TEXT("\nGame resumed.\n"));
-			controlData.game->suspended = 0;
-			ResumeThread(hThreadTime);
-			ResumeThread(waterFlowThread);
-			play(&controlData);
-			break;
-		case 3:
-			_tprintf(TEXT("\nClosing the application...\n"));
-			controlData.game->shutdown = 1;
-			break;
-		case 5:
-			if (firstTime) {
-				ResumeThread(hThreadTime);
-				play(&controlData);
-			}
-			else
-				play(&controlData);
-			break;
-		default:
-			_tprintf(TEXT("\nCouldn´t recognize the command.\n"));
-			break;
-		}
-	}*/
 	while (controlData.game->shutdown == 0 && numClientes < N) {
 		_tprintf(_T("\nWaiting for a client...\n"));
-		DWORD result = WaitForMultipleObjects(N, controlData.data->hEvents, FALSE, INFINITE);
+		DWORD result = WaitForMultipleObjects(N, controlData.data->hEvents, FALSE, 1000);
 		i = result - WAIT_OBJECT_0;
 		if (i >= 0 && i < N) {
 			_tprintf(_T("\nClient connected...\n"));
-			ResumeThread(hThreadTime);
+			//if(controlData.game->suspended == 0)
+				//ResumeThread(hThreadTime);
 			if (GetOverlappedResult(controlData.data->hPipes[i].hInstancia, &controlData.data->hPipes[i].overlap, &nBytes, FALSE)) {
 				ResetEvent(controlData.data->hEvents[i]);
 				WaitForSingleObject(controlData.data->hMutex, INFINITE);
@@ -1088,6 +1043,16 @@ int _tmain(int argc, TCHAR** argv) {
 				ReleaseMutex(controlData.data->hMutex);
 			}
 			numClientes++;
+		}
+		if (controlData.game->suspended == 1) {
+			SuspendThread(waterFlowThread);
+			SuspendThread(hThreadTime);
+			SuspendThread(receiveCommandsMonitorThread);
+		}
+		else {
+			ResumeThread(waterFlowThread);
+			ResumeThread(hThreadTime);
+			ResumeThread(receiveCommandsMonitorThread);
 		}
 	}
 	for (i = 0; i < N; i++) {

@@ -31,8 +31,8 @@ DWORD WINAPI receiveData(LPVOID p) {
 	while (1) {
 		if (data->game->shutdown == 1)
 			return 0;
-		WaitForSingleObject(data->hReadSem, INFINITE);
-		WaitForSingleObject(data->hMutex, INFINITE);
+		WaitForSingleObject(data->hReadSem, 2000);
+		WaitForSingleObject(data->hMutex, 2000);
 		CopyMemory(data->game, &(data->sharedMemGame->game), sizeof(Game));
 		ReleaseMutex(data->hMutex);
 		ReleaseSemaphore(data->hWriteSem, 1, NULL);
@@ -68,11 +68,8 @@ DWORD WINAPI executeCommands(LPVOID p) {
 	do {
 
 		_getts_s(option, _countof(option));
-
 		token = _tcstok_s(option, TEXT(" "), &nextToken);
 
-		//if (_tcscmp(token, TEXT("show")) == 0)
-			//showBoard(data);
 		if (_tcscmp(token, TEXT("delay")) == 0) {
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
