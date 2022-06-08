@@ -50,6 +50,7 @@ DWORD WINAPI showBoardAlways(LPVOID p) {
 		showBoard(data);
 		_tprintf(TEXT("\n>"));
 	}
+	return (1);
 }
 
 DWORD WINAPI executeCommands(LPVOID p) {
@@ -129,7 +130,6 @@ DWORD WINAPI executeCommands(LPVOID p) {
 		}
 	} while (_tcscmp(option, TEXT("exit")) != 0);
 
-	data->game->shutdown = 1;
 	return 1;
 }
 
@@ -300,6 +300,6 @@ int _tmain(int argc, TCHAR** argv) {
 	CloseHandle(controlData.hMutex);
 	CloseHandle(controlData.hWriteSem);
 	CloseHandle(controlData.hReadSem);
-
+	Sleep(3000);
 	return 0;
 }

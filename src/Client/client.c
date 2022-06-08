@@ -19,6 +19,9 @@ void showBoard(Game* data) {
 	_tprintf(TEXT("\nPiece: %c\n\n"), data->piece);
 }
 
+
+
+
 int _tmain(int argc, LPTSTR argv[]) {
 	Game game;
 	HANDLE hPipe;
@@ -55,7 +58,7 @@ int _tmain(int argc, LPTSTR argv[]) {
 		ret = ReadFile(hPipe, &game, sizeof(Game), &n, NULL);
 		showBoard(&game);
 		if (!ret || !n) {
-			_tprintf(TEXT("[LEITOR] %d %d... (ReadFile)\n"), ret, n);
+			_tprintf(TEXT("\nGame ended...\n"));
 			break;
 		}
 		_tprintf(TEXT("Received data...\n"));
@@ -114,6 +117,6 @@ int _tmain(int argc, LPTSTR argv[]) {
 			_tprintf(_T("\nSent Data...\n"));
 	}
 	CloseHandle(hPipe);
-	Sleep(200);
+	Sleep(3000);
 	return 0;
 }

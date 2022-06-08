@@ -560,11 +560,12 @@ DWORD WINAPI waterFlow(LPVOID p) {
 		}
 	}
 
-	data->game->shutdown = 1;
 
 	if (end == 1 && win == 0) {
 		_tprintf(TEXT("\n\nYOU LOST.\n\n"));
 		showBoard(data);
+		Sleep(3000);
+		data->game->shutdown = 1;
 		exit(1);
 	}
 	if (win == 1) {
@@ -572,6 +573,7 @@ DWORD WINAPI waterFlow(LPVOID p) {
 		data->game->board[data->game->endR][data->game->endC] = TEXT('E');
 		showBoard(data);
 		Sleep(3000);
+		data->game->shutdown = 1;
 		exit(1);
 	}
 }
@@ -950,7 +952,7 @@ int _tmain(int argc, TCHAR** argv) {
 
 	_tprintf(TEXT("\n-------------------PIPEGAME---------------\n"));
 	if (!initMemAndSync(&controlData)) {
-		_tprintf(_T("Error creating/opening shared memory and synchronization mechanisms.\n"));
+		_tprintf(_T("\nError creating/opening shared memory and synchronization mechanisms.\n"));
 		exit(1);
 	}
 
@@ -971,21 +973,21 @@ int _tmain(int argc, TCHAR** argv) {
 	controlData.data->terminar = 0;
 	controlData.data->hMutex = CreateMutex(NULL, FALSE, NULL);
 	if (controlData.data->hMutex == NULL) {
-		_tprintf(_T("\n[ERRO] Criar Mutex! (CreateMutex)"));
+		_tprintf(_T("\nErro creating Mutex.\n"));
 		exit(-1);
 	}
 
 	initBoard(&controlData);
 	for (i = 0; i < N; i++) {
-		_tprintf(_T("[ESCRITOR] Criar uma cópia do pipe '%s'... (CreateNamedPipe)\n"), PIPE_NAME);
+		_tprintf(_T("\nServer creating a copy of the pipe: '%s' ... (CreateNamedPipe)\n"), PIPE_NAME);
 		hEventTemp = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if (hEventTemp == NULL) {
-			_tprintf(_T("[ERRO] Criar Evento! (CreateEvent)"));
+			_tprintf(_T("\nError creating the event.\n"));
 			exit(-1);
 		}
 		hPipe = CreateNamedPipe(PIPE_NAME, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, N, 256 * sizeof(TCHAR), 256 * sizeof(TCHAR), 1000, NULL);
 		if (hPipe == INVALID_HANDLE_VALUE) {
-			_tprintf(_T("[ERRO] Criar NamedPipe! (CreateNamedPipe)"));
+			_tprintf(_T("\nError creating the named pipe.\n"));
 			exit(-1);
 		}
 		ZeroMemory(&controlData.data->hPipes[i].overlap, sizeof(controlData.data->hPipes[i].overlap));
@@ -995,13 +997,13 @@ int _tmain(int argc, TCHAR** argv) {
 		controlData.data->hPipes[i].activo = FALSE;
 
 		if (ConnectNamedPipe(hPipe, &controlData.data->hPipes[i].overlap)) {
-			_tprintf(_T("[ERRO] Ligação ao leitor! (ConnectNamedPipe)\n"));
+			_tprintf(_T("\nError while connecting to the client...\n"));
 			exit(-1);
 		}
 	}
 	hThread = CreateThread(NULL, 0, ThreadMensagens, &controlData, 0, NULL);
 	if (hThread == NULL) {
-		_tprintf(_T("[ERRO] Criar Thread! (CreateThread)"));
+		_tprintf(_T("\nError creating the thread for the named pipes.\n"));
 		exit(-1);
 	}
 
@@ -1073,11 +1075,11 @@ int _tmain(int argc, TCHAR** argv) {
 		}
 	}*/
 	while (controlData.game->shutdown == 0 && numClientes < N) {
-		_tprintf(_T("[ESCRITOR] Esperar ligação de um leitor...\n"));
+		_tprintf(_T("\nWaiting for a client...\n"));
 		DWORD result = WaitForMultipleObjects(N, controlData.data->hEvents, FALSE, INFINITE);
 		i = result - WAIT_OBJECT_0;
 		if (i >= 0 && i < N) {
-			_tprintf(_T("[ESCRITOR] Leitor %d chegou...\n"), i);
+			_tprintf(_T("\nClient connected...\n"));
 			ResumeThread(hThreadTime);
 			if (GetOverlappedResult(controlData.data->hPipes[i].hInstancia, &controlData.data->hPipes[i].overlap, &nBytes, FALSE)) {
 				ResetEvent(controlData.data->hEvents[i]);
@@ -1115,5 +1117,6 @@ int _tmain(int argc, TCHAR** argv) {
 	CloseHandle(controlData.hMutex);
 	CloseHandle(controlData.hWriteSem);
 	CloseHandle(controlData.hReadSem);
+	Sleep(3000);
 	return 0;
 }
