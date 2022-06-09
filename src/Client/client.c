@@ -125,19 +125,15 @@ int _tmain(int argc, LPTSTR argv[]) {
 	_tprintf(TEXT("\nConnected...\n"));
 
 	while (game.shutdown == 0) {
-		_tprintf(_T("%d"), game.suspended);
 		if(game.suspended == 0){
 			playGame(&game, hPipe);
 		}
 		else {
-			_tprintf(_T("\nIntroduce 1 to resume the game.\n\n>"));
+			_tprintf(_T("\nIntroduce any key to resume the game.\n"));
 			_fgetts(option, 256, stdin);
-			if (_ttoi(option) == 1)
-				game.suspended = 0;
+			game.suspended = 0;
 		}
 	}
-
-	
 	CloseHandle(hPipe);
 	Sleep(3000);
 	return 0;
