@@ -10,7 +10,6 @@ typedef struct _Command {
 	DWORD paramter1;
 }Command;
 
-
 typedef struct _SharedMemGame {
 	Game game[2];
 }SharedMemGame;

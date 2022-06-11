@@ -31,8 +31,9 @@ void playGame(Game* game, HANDLE hPipe) {
 		game->suspended = 0;
 		showBoard(game);
 		if (!ret || !n) {
-			_tprintf(TEXT("\nGame ended...\n"));
-			break;
+			_tprintf(TEXT("\nGame shutting down...\n"));
+			game->shutdown = 1;
+			return;
 		}
 		_tprintf(TEXT("Received data...\n"));
 		do {
@@ -135,6 +136,5 @@ int _tmain(int argc, LPTSTR argv[]) {
 		}
 	}
 	CloseHandle(hPipe);
-	Sleep(3000);
 	return 0;
 }
