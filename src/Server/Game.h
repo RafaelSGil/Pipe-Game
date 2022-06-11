@@ -18,5 +18,6 @@ typedef struct _Game {
 	DWORD row;
 	DWORD column;
 	DWORD time;
+	DWORD gameType; // 1 for solo, 2 for duo
 }Game;
 #endif // !GAME

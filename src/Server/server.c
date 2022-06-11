@@ -13,14 +13,28 @@
 
 void showBoard(ControlData* data) {
 	WaitForSingleObject(data->hMutex, INFINITE);
-	_tprintf(TEXT("\n\nTime: [%d]\n\n"), data->time);
-	for (DWORD i = 0; i < data->game->rows; i++)
-	{
-		_tprintf(TEXT("\n"));
-		for (DWORD j = 0; j < data->game->columns; j++)
-			_tprintf(TEXT("%c "), data->game->board[i][j]);
+	if (data->game[0].gameType == 1) {
+		_tprintf(TEXT("\n\nTime: [%d]\n\n"), data->game[0].time);
+		for (DWORD i = 0; i < data->game[0].rows; i++)
+		{
+			_tprintf(TEXT("\n"));
+			for (DWORD j = 0; j < data->game[0].columns; j++)
+				_tprintf(TEXT("%c "), data->game[0].board[i][j]);
+		}
+		_tprintf(TEXT("\n\n"));
 	}
-	_tprintf(TEXT("\n\n"));
+	else {
+		for (int i = 0; i < 2; i++) {
+			_tprintf(TEXT("\n\nTime: [%d]\n\n"), data->game[i].time);
+			for (DWORD j = 0; j < data->game[i].rows;j++)
+			{
+				_tprintf(TEXT("\n"));
+				for (DWORD k = 0; k < data->game[i].columns; k++)
+					_tprintf(TEXT("%c "), data->game[i].board[j][k]);
+			}
+			_tprintf(TEXT("\n\n"));
+		}
+	}
 	ReleaseMutex(data->hMutex);
 }
 
@@ -32,21 +46,26 @@ DWORD WINAPI pipesThread(LPVOID* param) {
 	ControlData* dados = (ControlData*)param;
 
 	do {
-		if (dados->game->random)
+		if (dados->game[0].random)
 			number = rand() % 6;
 		else {
-			if (dados->game->index == 6)
-				dados->game->index = 0;
-			number = dados->game->index;
+			if (dados->game[0].index == 6)
+				dados->game[0].index = 0;
+			number = dados->game[0].index;
 		}
-		dados->game->piece = dados->game->pieces[number];
+		if(dados->game[0].gameType == 1)
+			dados->game[0].piece = dados->game[0].pieces[number];
+		else{
+			dados->game[0].piece = dados->game[0].pieces[number];
+			dados->game[1].piece = dados->game[1].pieces[number];
+		}
 		for (i = 0; i < N; i++) {
 			WaitForSingleObject(dados->data->hMutex, INFINITE);
 			if (dados->data->hPipes[i].activo) {
-				if (!WriteFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL))
-					_tprintf(_T("[ERRO] Escrever no pipe! (WriteFile)\n"));
+				if (!WriteFile(dados->data->hPipes[i].hInstancia, &dados->game[i], sizeof(Game), &n, NULL))
+					_tprintf(_T("\nError writting on pipe...\n"));
 				else {
-					ret = ReadFile(dados->data->hPipes[i].hInstancia, dados->game, sizeof(Game), &n, NULL);
+					ret = ReadFile(dados->data->hPipes[i].hInstancia, &dados->game[i], sizeof(Game), &n, NULL);
 				}
 			}
 			ReleaseMutex(dados->data->hMutex);
@@ -61,11 +80,19 @@ DWORD WINAPI pipesThread(LPVOID* param) {
 DWORD WINAPI sendData(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 
-	while (data->game->shutdown == 0) {
+	while (data->game[0].shutdown == 0) {
 		WaitForSingleObject(data->hWriteSem, INFINITE);
 		WaitForSingleObject(data->hMutex, INFINITE);
-		data->game->time = data->time;
-		CopyMemory(&(data->sharedMemGame->game), data->game, sizeof(Game));
+		if (data->game[0].gameType == 1) {
+			data->game[0].time = data->time;
+			CopyMemory(&(data->sharedMemGame->game[0]), &(data->game[0]), sizeof(Game));
+		}
+		else {
+			for (int i = 0; i < 2; i++) {
+				data->game[i].time = data->time;
+				CopyMemory(&(data->sharedMemGame->game[i]), &(data->game[i]), sizeof(Game));
+			}
+		}
 		ReleaseMutex(data->hMutex);
 		ReleaseSemaphore(data->hReadSem, 1, NULL);
 	}
@@ -76,7 +103,7 @@ DWORD WINAPI decreaseTime(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 
 	while (data->game->shutdown == 0) {
-		if(data->game->suspended == 0){
+		if (data->game->suspended == 0) {
 			if (data->time > 0) {
 				(data->time)--;
 				Sleep(1000);
@@ -99,481 +126,953 @@ DWORD WINAPI waterFlow(LPVOID p) {
 	DWORD begin = 0;//while 0 water has not started flowing
 	DWORD end = 0;//while 0 game has not finished
 
-	piece = data->game->board[waterRow][waterColumns];
-
 	while (end == 0) {
-		if (data->game->suspended == 0) {
-			if (data->time == 0) {
-				if (waterRow == data->game->endR && waterColumns == data->game->endC) {
-					win = 1;
-					end = 1;
-					continue;
-				}
-
-				if (begin == 0) {
-					//first row, no border
-					if (waterRow == 0 && waterColumns != 0 && waterColumns != data->game->columns - 1) {
-						if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[3]) {
-								piece = data->game->board[waterRow][waterColumns + 1];
-								data->game->board[waterRow][waterColumns + 1] = TEXT('*');
-								waterColumns++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-
-						}
-						if (data->game->board[waterRow][waterColumns - 1] != TEXT('_') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[2]) {
-								piece = data->game->board[waterRow][waterColumns - 1];
-								data->game->board[waterRow][waterColumns - 1] = TEXT('*');
-								waterColumns--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[4] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[5]) {
-								piece = data->game->board[waterRow + 1][waterColumns];
-								data->game->board[waterRow + 1][waterColumns] = TEXT('*');
-								waterRow++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-
+		if (data->game[0].gameType == 1) {
+			if (data->game[0].suspended == 0) {
+				if (data->time == 0) {
+					if (waterRow == data->game[0].endR && waterColumns == data->game[0].endC) {
+						win = 1;
 						end = 1;
 						continue;
 					}
 
-					//first row, left border
-					if (waterRow == 0 && waterColumns == 0) {
-						if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[3]) {
-								piece = data->game->board[waterRow][waterColumns + 1];
-								data->game->board[waterRow][waterColumns + 1] = TEXT('*');
-								waterColumns++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[5]) {
-								piece = data->game->board[waterRow + 1][waterColumns];
-								data->game->board[waterRow + 1][waterColumns] = TEXT('*');
-								waterRow++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
+					if (begin == 0) {
+						//first row, no border
+						if (waterRow == 0 && waterColumns != 0 && waterColumns != data->game[0].columns - 1) {
+							if (data->game[0].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[3]) {
+									piece = data->game[0].board[waterRow][waterColumns + 1];
+									data->game[0].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
 
-						end = 1;
-						continue;
-					}
+							}
+							if (data->game[0].board[waterRow][waterColumns - 1] != TEXT('_') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[2]) {
+									piece = data->game[0].board[waterRow][waterColumns - 1];
+									data->game[0].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[4] || data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[5]) {
+									piece = data->game[0].board[waterRow + 1][waterColumns];
+									data->game[0].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
 
-					//first row, right border
-					if (waterRow == 0 && waterColumns == data->game->columns - 1) {
-						if (data->game->board[waterRow][waterColumns - 1] != TEXT('_') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[2]) {
-								piece = data->game->board[waterRow][waterColumns - 1];
-								data->game->board[waterRow][waterColumns - 1] = TEXT('*');
-								waterColumns--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[4]) {
-								piece = data->game->board[waterRow + 1][waterColumns];
-								data->game->board[waterRow + 1][waterColumns] = TEXT('*');
-								waterRow++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-
-						end = 1;
-						continue;
-					}
-
-					//last row, no border
-					if (waterRow == data->game->rows - 1 && waterColumns != 0 && waterColumns != data->game->columns - 1) {
-						if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
-								piece = data->game->board[waterRow][waterColumns + 1];
-								data->game->board[waterRow][waterColumns + 1] = TEXT('*');
-								waterColumns++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow][waterColumns - 1] != TEXT('_') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
-								piece = data->game->board[waterRow][waterColumns - 1];
-								data->game->board[waterRow][waterColumns - 1] = TEXT('*');
-								waterColumns--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow - 1][waterColumns] != TEXT('_') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[2] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
-								piece = data->game->board[waterRow - 1][waterColumns];
-								data->game->board[waterRow - 1][waterColumns] = TEXT('*');
-								waterRow--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-
-						end = 1;
-						continue;
-					}
-
-					//last row, left border
-					if (waterRow == data->game->rows - 1 && waterColumns == 0) {
-						if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
-								piece = data->game->board[waterRow][waterColumns + 1];
-								data->game->board[waterRow][waterColumns + 1] = TEXT('*');
-								waterColumns++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow - 1][waterColumns] != TEXT('_') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[2]) {
-								piece = data->game->board[waterRow - 1][waterColumns];
-								data->game->board[waterRow - 1][waterColumns] = TEXT('*');
-								waterRow--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-
-						end = 1;
-						continue;
-					}
-
-					//last row, right border
-					if (waterRow == data->game->rows - 1 && waterColumns == data->game->columns - 1) {
-						if (data->game->board[waterRow][waterColumns - 1] != '_' && data->game->board[waterRow][waterColumns - 1] != 'P') {
-							if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
-								piece = data->game->board[waterRow][waterColumns - 1];
-								data->game->board[waterRow][waterColumns - 1] = TEXT('*');
-								waterColumns--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow - 1][waterColumns] != '_' && data->game->board[waterRow - 1][waterColumns] != 'P') {
-							if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
-								piece = data->game->board[waterRow - 1][waterColumns];
-								data->game->board[waterRow - 1][waterColumns] = TEXT('*');
-								waterRow--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-
-						end = 1;
-						continue;
-					}
-
-					//first column, no border
-					if (waterColumns == 0 && waterRow != 0 && waterRow != data->game->rows - 1) {
-						if (data->game->board[waterRow][waterColumns + 1] != TEXT('_') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[3] || data->game->board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
-								piece = data->game->board[waterRow][waterColumns + 1];
-								data->game->board[waterRow][waterColumns + 1] = TEXT('*');
-								waterColumns++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow - 1][waterColumns] != TEXT('_') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[2] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
-								piece = data->game->board[waterRow - 1][waterColumns];
-								data->game->board[waterRow - 1][waterColumns] = TEXT('*');
-								waterRow--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[2]) {
-								piece = data->game->board[waterRow + 1][waterColumns];
-								data->game->board[waterRow + 1][waterColumns] = TEXT('*');
-								waterRow++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-
-						end = 1;
-						continue;
-					}
-
-					//last column, no border
-					if (waterColumns == data->game->columns - 1 && waterRow != 0 && waterRow != data->game->rows - 1) {
-						if (data->game->board[waterRow][waterColumns - 1] != TEXT('_') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[3] || data->game->board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
-								piece = data->game->board[waterRow][waterColumns - 1];
-								data->game->board[waterRow][waterColumns - 1] = TEXT('*');
-								waterColumns--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow - 1][waterColumns] != TEXT('_') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
-								piece = data->game->board[waterRow - 1][waterColumns];
-								data->game->board[waterRow - 1][waterColumns] = TEXT('*');
-								waterRow--;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-						if (data->game->board[waterRow + 1][waterColumns] != TEXT('_') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game->board[waterRow + 1][waterColumns] == data->game->pieces[4]) {
-								piece = data->game->board[waterRow + 1][waterColumns];
-								data->game->board[waterRow + 1][waterColumns] = TEXT('*');
-								waterRow++;
-								begin = 1;
-								Sleep(2000);
-								continue;
-							}
-						}
-
-						end = 1;
-						continue;
-					}
-				}
-				//water is on a pipe
-				if (piece == TEXT('━')) {
-					if (waterColumns != data->game->columns - 1) {
-						if (data->game->board[waterRow][waterColumns + 1] != TEXT('B') && data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns + 1] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┛') || data->game->board[waterRow][waterColumns + 1] == TEXT('━') || data->game->board[waterRow][waterColumns + 1] == TEXT('E')) {
-								piece = data->game->board[waterRow][waterColumns + 1];
-								data->game->board[waterRow][waterColumns + 1] = TEXT('*');
-								waterColumns++;
-								Sleep(2000);
-								continue;
-							}
 							end = 1;
-						}
-					}
-					if (waterColumns != 0) {
-						if (data->game->board[waterRow][waterColumns - 1] != TEXT('B') && data->game->board[waterRow][waterColumns - 1] != TEXT('*') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
-							if (data->game->board[waterRow][waterColumns - 1] == TEXT('┏') || data->game->board[waterRow][waterColumns - 1] == TEXT('┗') || data->game->board[waterRow][waterColumns - 1] == TEXT('━') || data->game->board[waterRow][waterColumns - 1] == TEXT('E')) {
-								piece = data->game->board[waterRow][waterColumns - 1];
-								data->game->board[waterRow][waterColumns - 1] = TEXT('*');
-								waterColumns--;
-								Sleep(2000);
-								continue;
-							}
-							end = 1;
+							continue;
 						}
 
-					}
-					continue;
-				}
-				if (piece == TEXT('┃')) {
-					if (waterRow != data->game->rows - 1) {
-						if (data->game->board[waterRow + 1][waterColumns] != TEXT('B') && data->game->board[waterRow + 1][waterColumns] != TEXT('*') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow + 1][waterColumns] == TEXT('┛') || data->game->board[waterRow + 1][waterColumns] == TEXT('┗') || data->game->board[waterRow + 1][waterColumns] == TEXT('┃') || data->game->board[waterRow + 1][waterColumns] == TEXT('E')) {
-								piece = data->game->board[waterRow + 1][waterColumns];
-								data->game->board[waterRow + 1][waterColumns] = TEXT('*');
-								waterRow++;
-								Sleep(2000);
-								continue;
+						//first row, left border
+						if (waterRow == 0 && waterColumns == 0) {
+							if (data->game[0].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[3]) {
+									piece = data->game[0].board[waterRow][waterColumns + 1];
+									data->game[0].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
 							}
-							end = 1;
-						}
-					}
-					if (waterRow != 0) {
-						if (data->game->board[waterRow - 1][waterColumns] != TEXT('B') && data->game->board[waterRow - 1][waterColumns] != TEXT('*') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
-							if (data->game->board[waterRow - 1][waterColumns] == TEXT('┏') || data->game->board[waterRow - 1][waterColumns] == TEXT('┓') || data->game->board[waterRow - 1][waterColumns] == TEXT('┃') || data->game->board[waterRow - 1][waterColumns] == TEXT('E')) {
-								piece = data->game->board[waterRow - 1][waterColumns];
-								data->game->board[waterRow - 1][waterColumns] = TEXT('*');
-								waterRow--;
-								Sleep(2000);
-								continue;
+							if (data->game[0].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[5]) {
+									piece = data->game[0].board[waterRow + 1][waterColumns];
+									data->game[0].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
 							}
+
 							end = 1;
+							continue;
 						}
 
+						//first row, right border
+						if (waterRow == 0 && waterColumns == data->game->columns - 1) {
+							if (data->game[0].board[waterRow][waterColumns - 1] != TEXT('_') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[2]) {
+									piece = data->game[0].board[waterRow][waterColumns - 1];
+									data->game[0].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[4]) {
+									piece = data->game[0].board[waterRow + 1][waterColumns];
+									data->game[0].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//last row, no border
+						if (waterRow == data->game->rows - 1 && waterColumns != 0 && waterColumns != data->game->columns - 1) {
+							if (data->game[0].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
+									piece = data->game[0].board[waterRow][waterColumns + 1];
+									data->game[0].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow][waterColumns - 1] != TEXT('_') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
+									piece = data->game[0].board[waterRow][waterColumns - 1];
+									data->game[0].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow - 1][waterColumns] != TEXT('_') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[2] || data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
+									piece = data->game[0].board[waterRow - 1][waterColumns];
+									data->game[0].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//last row, left border
+						if (waterRow == data->game->rows - 1 && waterColumns == 0) {
+							if (data->game[0].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
+									piece = data->game[0].board[waterRow][waterColumns + 1];
+									data->game[0].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow - 1][waterColumns] != TEXT('_') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[2]) {
+									piece = data->game[0].board[waterRow - 1][waterColumns];
+									data->game[0].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//last row, right border
+						if (waterRow == data->game->rows - 1 && waterColumns == data->game->columns - 1) {
+							if (data->game[0].board[waterRow][waterColumns - 1] != '_' && data->game[0].board[waterRow][waterColumns - 1] != 'P') {
+								if (data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
+									piece = data->game[0].board[waterRow][waterColumns - 1];
+									data->game[0].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow - 1][waterColumns] != '_' && data->game[0].board[waterRow - 1][waterColumns] != 'P') {
+								if (data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
+									piece = data->game[0].board[waterRow - 1][waterColumns];
+									data->game[0].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//first column, no border
+						if (waterColumns == 0 && waterRow != 0 && waterRow != data->game->rows - 1) {
+							if (data->game[0].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[3] || data->game[0].board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
+									piece = data->game[0].board[waterRow][waterColumns + 1];
+									data->game[0].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow - 1][waterColumns] != TEXT('_') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[2] || data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
+									piece = data->game[0].board[waterRow - 1][waterColumns];
+									data->game[0].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[2]) {
+									piece = data->game[0].board[waterRow + 1][waterColumns];
+									data->game[0].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//last column, no border
+						if (waterColumns == data->game->columns - 1 && waterRow != 0 && waterRow != data->game->rows - 1) {
+							if (data->game[0].board[waterRow][waterColumns - 1] != TEXT('_') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[3] || data->game[0].board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
+									piece = data->game[0].board[waterRow][waterColumns - 1];
+									data->game[0].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow - 1][waterColumns] != TEXT('_') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
+									piece = data->game[0].board[waterRow - 1][waterColumns];
+									data->game[0].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[0].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[0].board[waterRow + 1][waterColumns] == data->game->pieces[4]) {
+									piece = data->game[0].board[waterRow + 1][waterColumns];
+									data->game[0].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
 					}
-					continue;
-				}
-				if (piece == TEXT('┏')) {
-					if (data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('B') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
+					//water is on a pipe
+					if (piece == TEXT('━')) {
 						if (waterColumns != data->game->columns - 1) {
-							if (data->game->board[waterRow][waterColumns + 1] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┛') || data->game->board[waterRow][waterColumns + 1] == TEXT('━') || data->game->board[waterRow][waterColumns + 1] == TEXT('E')) {
-								piece = data->game->board[waterRow][waterColumns + 1];
-								data->game->board[waterRow][waterColumns + 1] = TEXT('*');
-								waterColumns++;
-								Sleep(2000);
-								continue;
+							if (data->game[0].board[waterRow][waterColumns + 1] != TEXT('B') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('*') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns + 1] == TEXT('┓') || data->game[0].board[waterRow][waterColumns + 1] == TEXT('┛') || data->game[0].board[waterRow][waterColumns + 1] == TEXT('━') || data->game[0].board[waterRow][waterColumns + 1] == TEXT('E')) {
+									piece = data->game[0].board[waterRow][waterColumns + 1];
+									data->game[0].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
 							}
-							end = 1;
 						}
-
-						continue;
-					}
-					if (data->game->board[waterRow + 1][waterColumns] != TEXT('*') && data->game->board[waterRow + 1][waterColumns] != TEXT('B') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
-						if (waterRow != data->game->rows - 1) {
-							if (data->game->board[waterRow + 1][waterColumns] == TEXT('┛') || data->game->board[waterRow + 1][waterColumns] == TEXT('┗') || data->game->board[waterRow + 1][waterColumns] == TEXT('┃') || data->game->board[waterRow + 1][waterColumns] == TEXT('E')) {
-								piece = data->game->board[waterRow + 1][waterColumns];
-								data->game->board[waterRow + 1][waterColumns] = TEXT('*');
-								waterRow++;
-								Sleep(2000);
-								continue;
-							}
-							end = 1;
-						}
-
-						continue;
-					}
-
-					continue;
-				}
-				if (piece == TEXT('┓')) {
-					if (data->game->board[waterRow][waterColumns - 1] != TEXT('*') && data->game->board[waterRow][waterColumns - 1] != TEXT('B') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
 						if (waterColumns != 0) {
-							if (data->game->board[waterRow][waterColumns - 1] == TEXT('┏') || data->game->board[waterRow][waterColumns - 1] == TEXT('┗') || data->game->board[waterRow][waterColumns - 1] == TEXT('━') || data->game->board[waterRow][waterColumns - 1] == TEXT('E')) {
-								piece = data->game->board[waterRow][waterColumns - 1];
-								data->game->board[waterRow][waterColumns - 1] = TEXT('*');
-								waterColumns--;
-								Sleep(2000);
-								continue;
+							if (data->game[0].board[waterRow][waterColumns - 1] != TEXT('B') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('*') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[0].board[waterRow][waterColumns - 1] == TEXT('┏') || data->game[0].board[waterRow][waterColumns - 1] == TEXT('┗') || data->game[0].board[waterRow][waterColumns - 1] == TEXT('━') || data->game[0].board[waterRow][waterColumns - 1] == TEXT('E')) {
+									piece = data->game[0].board[waterRow][waterColumns - 1];
+									data->game[0].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
 							}
-							end = 1;
-						}
 
+						}
 						continue;
 					}
-					if (data->game->board[waterRow + 1][waterColumns] != TEXT('*') && data->game->board[waterRow + 1][waterColumns] != TEXT('B') && data->game->board[waterRow + 1][waterColumns] != TEXT('P')) {
+					if (piece == TEXT('┃')) {
 						if (waterRow != data->game->rows - 1) {
-							if (data->game->board[waterRow + 1][waterColumns] == TEXT('┛') || data->game->board[waterRow + 1][waterColumns] == TEXT('┗') || data->game->board[waterRow + 1][waterColumns] == TEXT('┃') || data->game->board[waterRow + 1][waterColumns] == TEXT('E')) {
-								piece = data->game->board[waterRow + 1][waterColumns];
-								data->game->board[waterRow + 1][waterColumns] = TEXT('*');
-								waterRow++;
-								Sleep(2000);
-								continue;
+							if (data->game[0].board[waterRow + 1][waterColumns] != TEXT('B') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('*') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow + 1][waterColumns] == TEXT('┛') || data->game[0].board[waterRow + 1][waterColumns] == TEXT('┗') || data->game[0].board[waterRow + 1][waterColumns] == TEXT('┃') || data->game[0].board[waterRow + 1][waterColumns] == TEXT('E')) {
+									piece = data->game[0].board[waterRow + 1][waterColumns];
+									data->game[0].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
 							}
-							end = 1;
 						}
-						continue;
-					}
-
-					continue;
-				}
-				if (piece == TEXT('┛')) {
-					if (data->game->board[waterRow][waterColumns - 1] != TEXT('*') && data->game->board[waterRow][waterColumns - 1] != TEXT('B') && data->game->board[waterRow][waterColumns - 1] != TEXT('P')) {
-						if (waterColumns != 0) {
-							if (data->game->board[waterRow][waterColumns - 1] == TEXT('┏') || data->game->board[waterRow][waterColumns - 1] == TEXT('┗') || data->game->board[waterRow][waterColumns - 1] == TEXT('━') || data->game->board[waterRow][waterColumns - 1] == TEXT('E')) {
-								piece = data->game->board[waterRow][waterColumns - 1];
-								data->game->board[waterRow][waterColumns - 1] = TEXT('*');
-								waterColumns--;
-								Sleep(2000);
-								continue;
-							}
-							end = 1;
-						}
-
-						continue;
-					}
-					if (data->game->board[waterRow - 1][waterColumns] != TEXT('*') && data->game->board[waterRow - 1][waterColumns] != TEXT('B') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
 						if (waterRow != 0) {
-							if (data->game->board[waterRow - 1][waterColumns] == TEXT('┓') || data->game->board[waterRow - 1][waterColumns] == TEXT('┏') || data->game->board[waterRow - 1][waterColumns] == TEXT('┃') || data->game->board[waterRow - 1][waterColumns] == TEXT('E')) {
-								piece = data->game->board[waterRow - 1][waterColumns];
-								data->game->board[waterRow - 1][waterColumns] = TEXT('*');
-								waterRow--;
-								Sleep(2000);
-								continue;
+							if (data->game[0].board[waterRow - 1][waterColumns] != TEXT('B') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('*') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[0].board[waterRow - 1][waterColumns] == TEXT('┏') || data->game[0].board[waterRow - 1][waterColumns] == TEXT('┓') || data->game[0].board[waterRow - 1][waterColumns] == TEXT('┃') || data->game[0].board[waterRow - 1][waterColumns] == TEXT('E')) {
+									piece = data->game[0].board[waterRow - 1][waterColumns];
+									data->game[0].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
 							}
-							end = 1;
+
+						}
+						continue;
+					}
+					if (piece == TEXT('┏')) {
+						if (data->game[0].board[waterRow][waterColumns + 1] != TEXT('*') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('B') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('P')) {
+							if (waterColumns != data->game->columns - 1) {
+								if (data->game[0].board[waterRow][waterColumns + 1] == TEXT('┓') || data->game[0].board[waterRow][waterColumns + 1] == TEXT('┛') || data->game[0].board[waterRow][waterColumns + 1] == TEXT('━') || data->game[0].board[waterRow][waterColumns + 1] == TEXT('E')) {
+									piece = data->game[0].board[waterRow][waterColumns + 1];
+									data->game[0].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+							continue;
+						}
+						if (data->game[0].board[waterRow + 1][waterColumns] != TEXT('*') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('B') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('P')) {
+							if (waterRow != data->game->rows - 1) {
+								if (data->game[0].board[waterRow + 1][waterColumns] == TEXT('┛') || data->game[0].board[waterRow + 1][waterColumns] == TEXT('┗') || data->game[0].board[waterRow + 1][waterColumns] == TEXT('┃') || data->game[0].board[waterRow + 1][waterColumns] == TEXT('E')) {
+									piece = data->game[0].board[waterRow + 1][waterColumns];
+									data->game[0].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+							continue;
 						}
 
 						continue;
 					}
-
-					continue;
-				}
-				if (piece == TEXT('┗')) {
-					if (data->game->board[waterRow][waterColumns + 1] != TEXT('*') && data->game->board[waterRow][waterColumns + 1] != TEXT('B') && data->game->board[waterRow][waterColumns + 1] != TEXT('P')) {
-						if (waterColumns != data->game->columns - 1) {
-							if (data->game->board[waterRow][waterColumns + 1] == TEXT('┓') || data->game->board[waterRow][waterColumns + 1] == TEXT('┛') || data->game->board[waterRow][waterColumns + 1] == TEXT('━') || data->game->board[waterRow][waterColumns + 1] == TEXT('E')) {
-								piece = data->game->board[waterRow][waterColumns + 1];
-								data->game->board[waterRow][waterColumns + 1] = TEXT('*');
-								waterColumns++;
-								Sleep(2000);
-								continue;
+					if (piece == TEXT('┓')) {
+						if (data->game[0].board[waterRow][waterColumns - 1] != TEXT('*') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('B') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('P')) {
+							if (waterColumns != 0) {
+								if (data->game[0].board[waterRow][waterColumns - 1] == TEXT('┏') || data->game[0].board[waterRow][waterColumns - 1] == TEXT('┗') || data->game[0].board[waterRow][waterColumns - 1] == TEXT('━') || data->game[0].board[waterRow][waterColumns - 1] == TEXT('E')) {
+									piece = data->game[0].board[waterRow][waterColumns - 1];
+									data->game[0].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
 							}
-							end = 1;
-						}
 
+							continue;
+						}
+						if (data->game[0].board[waterRow + 1][waterColumns] != TEXT('*') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('B') && data->game[0].board[waterRow + 1][waterColumns] != TEXT('P')) {
+							if (waterRow != data->game->rows - 1) {
+								if (data->game[0].board[waterRow + 1][waterColumns] == TEXT('┛') || data->game[0].board[waterRow + 1][waterColumns] == TEXT('┗') || data->game[0].board[waterRow + 1][waterColumns] == TEXT('┃') || data->game[0].board[waterRow + 1][waterColumns] == TEXT('E')) {
+									piece = data->game[0].board[waterRow + 1][waterColumns];
+									data->game[0].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+							continue;
+						}
 
 						continue;
 					}
-					if (data->game->board[waterRow - 1][waterColumns] != TEXT('*') && data->game->board[waterRow - 1][waterColumns] != TEXT('B') && data->game->board[waterRow - 1][waterColumns] != TEXT('P')) {
-						if (waterRow != 0) {
-							if (data->game->board[waterRow - 1][waterColumns] == TEXT('┓') || data->game->board[waterRow - 1][waterColumns] == TEXT('┏') || data->game->board[waterRow - 1][waterColumns] == TEXT('┃') || data->game->board[waterRow - 1][waterColumns] == TEXT('E')) {
-								piece = data->game->board[waterRow - 1][waterColumns];
-								data->game->board[waterRow - 1][waterColumns] = TEXT('*');
-								waterRow--;
-								Sleep(2000);
-								continue;
+					if (piece == TEXT('┛')) {
+						if (data->game[0].board[waterRow][waterColumns - 1] != TEXT('*') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('B') && data->game[0].board[waterRow][waterColumns - 1] != TEXT('P')) {
+							if (waterColumns != 0) {
+								if (data->game[0].board[waterRow][waterColumns - 1] == TEXT('┏') || data->game[0].board[waterRow][waterColumns - 1] == TEXT('┗') || data->game[0].board[waterRow][waterColumns - 1] == TEXT('━') || data->game[0].board[waterRow][waterColumns - 1] == TEXT('E')) {
+									piece = data->game[0].board[waterRow][waterColumns - 1];
+									data->game[0].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
 							}
-							end = 1;
+
+							continue;
 						}
+						if (data->game[0].board[waterRow - 1][waterColumns] != TEXT('*') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('B') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('P')) {
+							if (waterRow != 0) {
+								if (data->game[0].board[waterRow - 1][waterColumns] == TEXT('┓') || data->game[0].board[waterRow - 1][waterColumns] == TEXT('┏') || data->game[0].board[waterRow - 1][waterColumns] == TEXT('┃') || data->game[0].board[waterRow - 1][waterColumns] == TEXT('E')) {
+									piece = data->game[0].board[waterRow - 1][waterColumns];
+									data->game[0].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+							continue;
+						}
+
 						continue;
 					}
+					if (piece == TEXT('┗')) {
+						if (data->game[0].board[waterRow][waterColumns + 1] != TEXT('*') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('B') && data->game[0].board[waterRow][waterColumns + 1] != TEXT('P')) {
+							if (waterColumns != data->game->columns - 1) {
+								if (data->game[0].board[waterRow][waterColumns + 1] == TEXT('┓') || data->game[0].board[waterRow][waterColumns + 1] == TEXT('┛') || data->game[0].board[waterRow][waterColumns + 1] == TEXT('━') || data->game[0].board[waterRow][waterColumns + 1] == TEXT('E')) {
+									piece = data->game[0].board[waterRow][waterColumns + 1];
+									data->game[0].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
 
 
+							continue;
+						}
+						if (data->game[0].board[waterRow - 1][waterColumns] != TEXT('*') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('B') && data->game[0].board[waterRow - 1][waterColumns] != TEXT('P')) {
+							if (waterRow != 0) {
+								if (data->game[0].board[waterRow - 1][waterColumns] == TEXT('┓') || data->game[0].board[waterRow - 1][waterColumns] == TEXT('┏') || data->game[0].board[waterRow - 1][waterColumns] == TEXT('┃') || data->game[0].board[waterRow - 1][waterColumns] == TEXT('E')) {
+									piece = data->game[0].board[waterRow - 1][waterColumns];
+									data->game[0].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+							continue;
+						}
+
+
+					}
 				}
 			}
+		}else {
+		for (int i = 0; i < 2; i++) {
+			if (data->game[i].suspended == 0) {
+				if (data->time == 0) {
+					if (waterRow == data->game[i].endR && waterColumns == data->game[i].endC) {
+						win = 1;
+						end = 1;
+						continue;
+					}
+					if (begin == 0) {
+						//first row, no border
+						if (waterRow == 0 && waterColumns != 0 && waterColumns != data->game[i].columns - 1) {
+							if (data->game[i].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[3]) {
+									piece = data->game[i].board[waterRow][waterColumns + 1];
+									data->game[i].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+
+							}
+							if (data->game[i].board[waterRow][waterColumns - 1] != TEXT('_') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[2]) {
+									piece = data->game[i].board[waterRow][waterColumns - 1];
+									data->game[i].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[4] || data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[5]) {
+									piece = data->game[i].board[waterRow + 1][waterColumns];
+									data->game[i].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//first row, left border
+						if (waterRow == 0 && waterColumns == 0) {
+							if (data->game[i].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[3]) {
+									piece = data->game[i].board[waterRow][waterColumns + 1];
+									data->game[i].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[5]) {
+									piece = data->game[i].board[waterRow + 1][waterColumns];
+									data->game[i].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//first row, right border
+						if (waterRow == 0 && waterColumns == data->game->columns - 1) {
+							if (data->game[i].board[waterRow][waterColumns - 1] != TEXT('_') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[2]) {
+									piece = data->game[i].board[waterRow][waterColumns - 1];
+									data->game[i].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[4]) {
+									piece = data->game[i].board[waterRow + 1][waterColumns];
+									data->game[i].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//last row, no border
+						if (waterRow == data->game->rows - 1 && waterColumns != 0 && waterColumns != data->game->columns - 1) {
+							if (data->game[i].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
+									piece = data->game[i].board[waterRow][waterColumns + 1];
+									data->game[i].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow][waterColumns - 1] != TEXT('_') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
+									piece = data->game[i].board[waterRow][waterColumns - 1];
+									data->game[i].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow - 1][waterColumns] != TEXT('_') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[2] || data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
+									piece = data->game[i].board[waterRow - 1][waterColumns];
+									data->game[i].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//last row, left border
+						if (waterRow == data->game->rows - 1 && waterColumns == 0) {
+							if (data->game[i].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
+									piece = data->game[i].board[waterRow][waterColumns + 1];
+									data->game[i].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow - 1][waterColumns] != TEXT('_') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[2]) {
+									piece = data->game[i].board[waterRow - 1][waterColumns];
+									data->game[i].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//last row, right border
+						if (waterRow == data->game->rows - 1 && waterColumns == data->game->columns - 1) {
+							if (data->game[i].board[waterRow][waterColumns - 1] != '_' && data->game[i].board[waterRow][waterColumns - 1] != 'P') {
+								if (data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
+									piece = data->game[i].board[waterRow][waterColumns - 1];
+									data->game[i].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow - 1][waterColumns] != '_' && data->game[i].board[waterRow - 1][waterColumns] != 'P') {
+								if (data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
+									piece = data->game[i].board[waterRow - 1][waterColumns];
+									data->game[i].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//first column, no border
+						if (waterColumns == 0 && waterRow != 0 && waterRow != data->game->rows - 1) {
+							if (data->game[i].board[waterRow][waterColumns + 1] != TEXT('_') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[3] || data->game[i].board[waterRow][waterColumns + 1] == data->game->pieces[4]) {
+									piece = data->game[i].board[waterRow][waterColumns + 1];
+									data->game[i].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow - 1][waterColumns] != TEXT('_') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[2] || data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
+									piece = data->game[i].board[waterRow - 1][waterColumns];
+									data->game[i].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[2]) {
+									piece = data->game[i].board[waterRow + 1][waterColumns];
+									data->game[i].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+
+						//last column, no border
+						if (waterColumns == data->game->columns - 1 && waterRow != 0 && waterRow != data->game->rows - 1) {
+							if (data->game[i].board[waterRow][waterColumns - 1] != TEXT('_') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[0] || data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[3] || data->game[i].board[waterRow][waterColumns - 1] == data->game->pieces[5]) {
+									piece = data->game[i].board[waterRow][waterColumns - 1];
+									data->game[i].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow - 1][waterColumns] != TEXT('_') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow - 1][waterColumns] == data->game->pieces[3]) {
+									piece = data->game[i].board[waterRow - 1][waterColumns];
+									data->game[i].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+							if (data->game[i].board[waterRow + 1][waterColumns] != TEXT('_') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[1] || data->game[i].board[waterRow + 1][waterColumns] == data->game->pieces[4]) {
+									piece = data->game[i].board[waterRow + 1][waterColumns];
+									data->game[i].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									begin = 1;
+									Sleep(2000);
+									continue;
+								}
+							}
+
+							end = 1;
+							continue;
+						}
+					}
+					//water is on a pipe
+					if (piece == TEXT('━')) {
+						if (waterColumns != data->game->columns - 1) {
+							if (data->game[i].board[waterRow][waterColumns + 1] != TEXT('B') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('*') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns + 1] == TEXT('┓') || data->game[i].board[waterRow][waterColumns + 1] == TEXT('┛') || data->game[i].board[waterRow][waterColumns + 1] == TEXT('━') || data->game[i].board[waterRow][waterColumns + 1] == TEXT('E')) {
+									piece = data->game[i].board[waterRow][waterColumns + 1];
+									data->game[i].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+						}
+						if (waterColumns != 0) {
+							if (data->game[i].board[waterRow][waterColumns - 1] != TEXT('B') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('*') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('P')) {
+								if (data->game[i].board[waterRow][waterColumns - 1] == TEXT('┏') || data->game[i].board[waterRow][waterColumns - 1] == TEXT('┗') || data->game[i].board[waterRow][waterColumns - 1] == TEXT('━') || data->game[i].board[waterRow][waterColumns - 1] == TEXT('E')) {
+									piece = data->game[i].board[waterRow][waterColumns - 1];
+									data->game[i].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+						}
+						continue;
+					}
+					if (piece == TEXT('┃')) {
+						if (waterRow != data->game->rows - 1) {
+							if (data->game[i].board[waterRow + 1][waterColumns] != TEXT('B') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('*') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow + 1][waterColumns] == TEXT('┛') || data->game[i].board[waterRow + 1][waterColumns] == TEXT('┗') || data->game[i].board[waterRow + 1][waterColumns] == TEXT('┃') || data->game[i].board[waterRow + 1][waterColumns] == TEXT('E')) {
+									piece = data->game[i].board[waterRow + 1][waterColumns];
+									data->game[i].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+						}
+						if (waterRow != 0) {
+							if (data->game[i].board[waterRow - 1][waterColumns] != TEXT('B') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('*') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('P')) {
+								if (data->game[i].board[waterRow - 1][waterColumns] == TEXT('┏') || data->game[i].board[waterRow - 1][waterColumns] == TEXT('┓') || data->game[i].board[waterRow - 1][waterColumns] == TEXT('┃') || data->game[i].board[waterRow - 1][waterColumns] == TEXT('E')) {
+									piece = data->game[i].board[waterRow - 1][waterColumns];
+									data->game[i].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+						}
+						continue;
+					}
+					if (piece == TEXT('┏')) {
+						if (data->game[i].board[waterRow][waterColumns + 1] != TEXT('*') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('B') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('P')) {
+							if (waterColumns != data->game->columns - 1) {
+								if (data->game[i].board[waterRow][waterColumns + 1] == TEXT('┓') || data->game[i].board[waterRow][waterColumns + 1] == TEXT('┛') || data->game[i].board[waterRow][waterColumns + 1] == TEXT('━') || data->game[i].board[waterRow][waterColumns + 1] == TEXT('E')) {
+									piece = data->game[i].board[waterRow][waterColumns + 1];
+									data->game[i].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+							continue;
+						}
+						if (data->game[i].board[waterRow + 1][waterColumns] != TEXT('*') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('B') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('P')) {
+							if (waterRow != data->game->rows - 1) {
+								if (data->game[i].board[waterRow + 1][waterColumns] == TEXT('┛') || data->game[i].board[waterRow + 1][waterColumns] == TEXT('┗') || data->game[i].board[waterRow + 1][waterColumns] == TEXT('┃') || data->game[i].board[waterRow + 1][waterColumns] == TEXT('E')) {
+									piece = data->game[i].board[waterRow + 1][waterColumns];
+									data->game[i].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+							continue;
+						}
+
+						continue;
+					}
+					if (piece == TEXT('┓')) {
+						if (data->game[i].board[waterRow][waterColumns - 1] != TEXT('*') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('B') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('P')) {
+							if (waterColumns != 0) {
+								if (data->game[i].board[waterRow][waterColumns - 1] == TEXT('┏') || data->game[i].board[waterRow][waterColumns - 1] == TEXT('┗') || data->game[i].board[waterRow][waterColumns - 1] == TEXT('━') || data->game[i].board[waterRow][waterColumns - 1] == TEXT('E')) {
+									piece = data->game[i].board[waterRow][waterColumns - 1];
+									data->game[i].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+							continue;
+						}
+						if (data->game[i].board[waterRow + 1][waterColumns] != TEXT('*') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('B') && data->game[i].board[waterRow + 1][waterColumns] != TEXT('P')) {
+							if (waterRow != data->game->rows - 1) {
+								if (data->game[i].board[waterRow + 1][waterColumns] == TEXT('┛') || data->game[i].board[waterRow + 1][waterColumns] == TEXT('┗') || data->game[i].board[waterRow + 1][waterColumns] == TEXT('┃') || data->game[i].board[waterRow + 1][waterColumns] == TEXT('E')) {
+									piece = data->game[i].board[waterRow + 1][waterColumns];
+									data->game[i].board[waterRow + 1][waterColumns] = TEXT('*');
+									waterRow++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+							continue;
+						}
+
+						continue;
+					}
+					if (piece == TEXT('┛')) {
+						if (data->game[i].board[waterRow][waterColumns - 1] != TEXT('*') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('B') && data->game[i].board[waterRow][waterColumns - 1] != TEXT('P')) {
+							if (waterColumns != 0) {
+								if (data->game[i].board[waterRow][waterColumns - 1] == TEXT('┏') || data->game[i].board[waterRow][waterColumns - 1] == TEXT('┗') || data->game[i].board[waterRow][waterColumns - 1] == TEXT('━') || data->game[i].board[waterRow][waterColumns - 1] == TEXT('E')) {
+									piece = data->game[i].board[waterRow][waterColumns - 1];
+									data->game[i].board[waterRow][waterColumns - 1] = TEXT('*');
+									waterColumns--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+							continue;
+						}
+						if (data->game[i].board[waterRow - 1][waterColumns] != TEXT('*') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('B') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('P')) {
+							if (waterRow != 0) {
+								if (data->game[i].board[waterRow - 1][waterColumns] == TEXT('┓') || data->game[i].board[waterRow - 1][waterColumns] == TEXT('┏') || data->game[i].board[waterRow - 1][waterColumns] == TEXT('┃') || data->game[i].board[waterRow - 1][waterColumns] == TEXT('E')) {
+									piece = data->game[i].board[waterRow - 1][waterColumns];
+									data->game[i].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+							continue;
+						}
+
+						continue;
+					}
+					if (piece == TEXT('┗')) {
+						if (data->game[i].board[waterRow][waterColumns + 1] != TEXT('*') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('B') && data->game[i].board[waterRow][waterColumns + 1] != TEXT('P')) {
+							if (waterColumns != data->game->columns - 1) {
+								if (data->game[i].board[waterRow][waterColumns + 1] == TEXT('┓') || data->game[i].board[waterRow][waterColumns + 1] == TEXT('┛') || data->game[i].board[waterRow][waterColumns + 1] == TEXT('━') || data->game[i].board[waterRow][waterColumns + 1] == TEXT('E')) {
+									piece = data->game[i].board[waterRow][waterColumns + 1];
+									data->game[i].board[waterRow][waterColumns + 1] = TEXT('*');
+									waterColumns++;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+
+
+							continue;
+						}
+						if (data->game[i].board[waterRow - 1][waterColumns] != TEXT('*') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('B') && data->game[i].board[waterRow - 1][waterColumns] != TEXT('P')) {
+							if (waterRow != 0) {
+								if (data->game[i].board[waterRow - 1][waterColumns] == TEXT('┓') || data->game[i].board[waterRow - 1][waterColumns] == TEXT('┏') || data->game[i].board[waterRow - 1][waterColumns] == TEXT('┃') || data->game[i].board[waterRow - 1][waterColumns] == TEXT('E')) {
+									piece = data->game[i].board[waterRow - 1][waterColumns];
+									data->game[i].board[waterRow - 1][waterColumns] = TEXT('*');
+									waterRow--;
+									Sleep(2000);
+									continue;
+								}
+								end = 1;
+							}
+							continue;
+						}
+
+
+					}
+				}
+			}
+			}
+
 		}
 	}
 
-
-	if (end == 1 && win == 0) {
-		_tprintf(TEXT("\n\nYOU LOST.\n\n"));
-		showBoard(data);
-		Sleep(3000);
-		data->game->shutdown = 1;
-		exit(1);
+	if(data->game->gameType == 1){
+		if (end == 1 && win == 0) {
+			_tprintf(TEXT("\n\nYOU LOST.\n\n"));
+			Sleep(3000);
+			data->game[0].shutdown = 1;
+			exit(1);
+		}
+		if (win == 1) {
+			_tprintf(TEXT("\n\nYOU WON.\n\n"));
+			data->game[0].board[data->game->endR][data->game->endC] = TEXT('E');
+			Sleep(3000);
+			data->game[0].shutdown = 1;
+			exit(1);
+		}
 	}
-	if (win == 1) {
-		_tprintf(TEXT("\n\nYOU WON.\n\n"));
-		data->game->board[data->game->endR][data->game->endC] = TEXT('E');
-		showBoard(data);
-		Sleep(3000);
-		data->game->shutdown = 1;
-		exit(1);
+	else {
+		if (end == 1 && win == 0) {
+			_tprintf(TEXT("\n\nYOU LOST.\n\n"));
+			Sleep(3000);
+			data->game[0].shutdown = 1;
+			data->game[1].shutdown = 1;
+			exit(1);
+		}
+		if (win == 1) {
+			_tprintf(TEXT("\n\nYOU WON.\n\n"));
+			data->game[0].board[data->game->endR][data->game->endC] = TEXT('E');
+			data->game[1].board[data->game->endR][data->game->endC] = TEXT('E');
+			Sleep(3000);
+			data->game[0].shutdown = 1;
+			data->game[1].shutdown = 1;
+			exit(1);
+		}
 	}
 }
-
+		
 
 DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 	ControlData* data = (ControlData*)p;
@@ -582,7 +1081,7 @@ DWORD WINAPI receiveCommnadsMonitor(LPVOID p) {
 
 
 	do {
-			if(data->game->suspended == 0){
+		if (data->game->suspended == 0) {
 			WaitForSingleObject(data->commandEvent, INFINITE);
 			WaitForSingleObject(data->commandMutex, INFINITE);
 			if (i == BUFFERSIZE)
@@ -620,19 +1119,38 @@ DWORD setWalls(ControlData* data, DWORD row, DWORD column) {
 		return 0;
 	}
 	WaitForSingleObject(data->hMutex, INFINITE);
-	data->game->board[row][column] = TEXT('P');
+	if (data->game->gameType == 1) {
+		data->game[0].board[row][column] = TEXT('P');
+	}
+	else {
+		for (int i = 0; i < 2; i++) {
+			data->game[i].board[row][column] = TEXT('P');
+		}
+	}
 	ReleaseMutex(data->hMutex);
 	return 1;
 
 }
 
 DWORD setRandom(ControlData* data) {
-	if (data->game->random) {
-		data->game->random = FALSE;
-		return 1;
+	if (data->game[0].gameType == 1) {
+		if (data->game[0].random) {
+			data->game[0].random = FALSE;
+			return 1;
+		}
+		else
+			data->game[0].random = TRUE;
 	}
-	else
-		data->game->random = TRUE;
+	else {
+		for (int i = 0; i < 2; i++) {
+			if (data->game[i].random) {
+				data->game[i].random = FALSE;
+				return 1;
+			}
+			else
+				data->game[i].random = TRUE;
+		}
+	}
 	return 1;
 }
 
@@ -784,11 +1302,22 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 		}
 	}
 	DWORD sizeDword = SIZE_DWORD;
+	long rowsRead = 0;
+	long columnsRead = 0;
+	long timeRead = 0;
 	// Querys the values for the variables
-	long rowsRead = RegQueryValueEx(registry->key, TEXT("Rows"), NULL, NULL, (LPBYTE)&controlData->game->rows, &sizeDword);
-	long columnsRead = RegQueryValueEx(registry->key, TEXT("Columns"), NULL, NULL, (LPBYTE)&controlData->game->columns, &sizeDword);
-	long timeRead = RegQueryValueEx(registry->key, TEXT("Time"), NULL, NULL, (LPBYTE)&controlData->time, &sizeDword);
-
+	if (controlData->game[0].gameType == 1) {
+		long rowsRead = RegQueryValueEx(registry->key, TEXT("Rows"), NULL, NULL, (LPBYTE)&controlData->game[0].rows, &sizeDword);
+		long columnsRead = RegQueryValueEx(registry->key, TEXT("Columns"), NULL, NULL, (LPBYTE)&controlData->game[0].columns, &sizeDword);
+		long timeRead = RegQueryValueEx(registry->key, TEXT("Time"), NULL, NULL, (LPBYTE)&controlData->time, &sizeDword);
+	}
+	else {
+		for (int i = 0; i < 2; i++) {
+			long rowsRead = RegQueryValueEx(registry->key, TEXT("Rows"), NULL, NULL, (LPBYTE)&controlData->game[i].rows, &sizeDword);
+			long columnsRead = RegQueryValueEx(registry->key, TEXT("Columns"), NULL, NULL, (LPBYTE)&controlData->game[i].columns, &sizeDword);
+			long timeRead = RegQueryValueEx(registry->key, TEXT("Time"), NULL, NULL, (LPBYTE)&controlData->time, &sizeDword);
+		}
+	}
 
 
 	if (rowsRead != ERROR_SUCCESS || columnsRead != ERROR_SUCCESS || timeRead != ERROR_SUCCESS) {
@@ -801,9 +1330,16 @@ BOOL configGame(Registry* registry, ControlData* controlData) {
 
 int initBoard(ControlData* data) {
 
-	for (DWORD i = 0; i < data->game->rows; i++) {
-		for (DWORD j = 0; j < data->game->columns; j++) {
-			_tcscpy_s(&data->game->board[i][j], sizeof(TCHAR), TEXT("-"));
+	for (DWORD i = 0; i < data->game[0].rows; i++) {
+		for (DWORD j = 0; j < data->game[0].columns; j++) {
+			if (data->game[0].gameType == 1) {
+				_tcscpy_s(&data->game[0].board[i][j], sizeof(TCHAR), TEXT("-"));
+			}
+			else {
+				for (int k = 0; k < 2; k++) {
+					_tcscpy_s(&data->game[k].board[i][j], sizeof(TCHAR), TEXT("-"));
+				}
+			}
 		}
 	}
 
@@ -818,12 +1354,25 @@ void startGame(ControlData* data) {
 	int number;
 	int quadrante = 0;
 
-	_tcscpy_s(&data->game->pieces[0], sizeof(TCHAR), TEXT("━"));
-	_tcscpy_s(&data->game->pieces[1], sizeof(TCHAR), TEXT("┃"));
-	_tcscpy_s(&data->game->pieces[2], sizeof(TCHAR), TEXT("┏"));
-	_tcscpy_s(&data->game->pieces[3], sizeof(TCHAR), TEXT("┓"));
-	_tcscpy_s(&data->game->pieces[4], sizeof(TCHAR), TEXT("┛"));
-	_tcscpy_s(&data->game->pieces[5], sizeof(TCHAR), TEXT("┗"));
+	if (data->game[0].gameType == 1) {
+		_tcscpy_s(&data->game[0].pieces[0], sizeof(TCHAR), TEXT("━"));
+		_tcscpy_s(&data->game[0].pieces[1], sizeof(TCHAR), TEXT("┃"));
+		_tcscpy_s(&data->game[0].pieces[2], sizeof(TCHAR), TEXT("┏"));
+		_tcscpy_s(&data->game[0].pieces[3], sizeof(TCHAR), TEXT("┓"));
+		_tcscpy_s(&data->game[0].pieces[4], sizeof(TCHAR), TEXT("┛"));
+		_tcscpy_s(&data->game[0].pieces[5], sizeof(TCHAR), TEXT("┗"));
+	}
+	else {
+		for (int i = 0; i < N; i++) {
+			_tcscpy_s(&data->game[i].pieces[0], sizeof(TCHAR), TEXT("━"));
+			_tcscpy_s(&data->game[i].pieces[1], sizeof(TCHAR), TEXT("┃"));
+			_tcscpy_s(&data->game[i].pieces[2], sizeof(TCHAR), TEXT("┏"));
+			_tcscpy_s(&data->game[i].pieces[3], sizeof(TCHAR), TEXT("┓"));
+			_tcscpy_s(&data->game[i].pieces[4], sizeof(TCHAR), TEXT("┛"));
+			_tcscpy_s(&data->game[i].pieces[5], sizeof(TCHAR), TEXT("┗"));
+		}
+	}
+
 
 	number = rand() % 2 + 1;
 
@@ -906,13 +1455,27 @@ void startGame(ControlData* data) {
 
 	}
 
-	data->game->board[randomRowB][randomColumnB] = 'B';
-	data->game->board[randomRowE][randomColumnE] = 'E';
-	data->game->endR = randomRowE;
-	data->game->endC = randomColumnE;
-	data->game->random = FALSE;
-	data->game->index = 0;
-	data->game->suspended = 0;
+	if (data->game[0].gameType == 2) {
+		for (int i = 0; i < 2; i++) {
+			data->game[i].board[randomRowB][randomColumnB] = 'B';
+			data->game[i].board[randomRowE][randomColumnE] = 'E';
+			data->game[i].endR = randomRowE;
+			data->game[i].endC = randomColumnE;
+			data->game[i].random = FALSE;
+			data->game[i].index = 0;
+			data->game[i].suspended = 0;
+		}
+	}
+	else {
+		data->game[0].board[randomRowB][randomColumnB] = 'B';
+		data->game[0].board[randomRowE][randomColumnE] = 'E';
+		data->game[0].endR = randomRowE;
+		data->game[0].endC = randomColumnE;
+		data->game[0].random = FALSE;
+		data->game[0].index = 0;
+		data->game[0].suspended = 0;
+	}
+
 }
 
 int _tmain(int argc, TCHAR** argv) {
@@ -925,24 +1488,26 @@ int _tmain(int argc, TCHAR** argv) {
 
 	// Variables
 	Registry registry;
-	Game game;
+	Game game[2];
 	threadData data;
 	ControlData controlData;
-	controlData.game = &game;
+	controlData.game[0] = game[0];
+	controlData.game[1] = game[1];
 	controlData.data = &data;
 	_tcscpy_s(registry.keyCompletePath, BUFFER, TEXT("SOFTWARE\\PipeGame\0"));
-	TCHAR option[BUFFER];
 	HANDLE hThreadSendDataToMonitor;
 	HANDLE receiveCommandsMonitorThread;
 	HANDLE hThreadTime;
 	HANDLE waterFlowThread;
 	HANDLE hPipe, hThread, hEventTemp;
 	int i, numClientes = 0;
-	controlData.game->shutdown = 0; // shutdown
+	controlData.game[0].shutdown = 0; // shutdown
+	controlData.game[1].shutdown = 0;
 	boolean firstTime = TRUE;
-	DWORD offset, nBytes;
+	DWORD nBytes;
 	DWORD trinco = 0;
-
+	TCHAR buffer[256];
+	DWORD gameType = 0;
 	srand((unsigned int)time(NULL));
 
 
@@ -953,19 +1518,40 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 
+	while (gameType < 1 || gameType > 2) {
+		_tprintf(_T("\nWhat type of configuration do you want?\n\n1 - Solo.\n2 - Duo.\n\n>"));
+		_fgetts(buffer, 256, stdin);
+		if (_tcslen(buffer) == 2)
+			gameType = atoi(buffer);
+	}
+	if (gameType == 1)
+		controlData.game[0].gameType = gameType;
+	else {
+		controlData.game[0].gameType = gameType;
+		controlData.game[1].gameType = gameType;
+	}
+
 	if (argc != 4) {
 		if (!configGame(&registry, &controlData)) {
 			_tprintf(_T("\n\nError during configuration of the game.\n"));
 			exit(1);
 		}
 	}
-	else {
-		controlData.game->rows = _ttoi(argv[1]);
-		controlData.game->columns = _ttoi(argv[2]);
-		controlData.time = _ttoi(argv[3]);
 
-		_tprintf(TEXT("\nBoard Loaded with [%d] rows and [%d] columns, water [%d] seconds.\n"), controlData.game->rows, controlData.game->columns, controlData.time);
+	else {
+		if (controlData.game[0].gameType == 2) {
+			for (int i = 0; i < 2; i++) {
+				controlData.game[i].rows = _ttoi(argv[1]);
+				controlData.game[i].columns = _ttoi(argv[2]);
+			}
+		}
+		else {
+			controlData.game[0].rows = _ttoi(argv[1]);
+			controlData.game[0].columns = _ttoi(argv[2]);
+		}
+		controlData.time = _ttoi(argv[3]);
 	}
+	_tprintf(TEXT("\n\nBoard Loaded with [%d] rows and [%d] columns, water [%d] seconds.\n"), controlData.game->rows, controlData.game->columns, controlData.time);
 
 	controlData.data->terminar = 0;
 	controlData.data->hMutex = CreateMutex(NULL, FALSE, NULL);
@@ -1032,13 +1618,13 @@ int _tmain(int argc, TCHAR** argv) {
 		exit(1);
 	}
 
-	while (controlData.game->shutdown == 0 && numClientes < N) {
+	while (controlData.game->shutdown == 0 && numClientes < N+1) {
 		_tprintf(_T("\nWaiting for a client...\n"));
 		DWORD result = WaitForMultipleObjects(N, controlData.data->hEvents, FALSE, 1000);
 		i = result - WAIT_OBJECT_0;
 		if (i >= 0 && i < N) {
 			_tprintf(_T("\nClient connected...\n"));
-			if(controlData.game->suspended == 0)
+			if (controlData.game[0].suspended == 0)
 				ResumeThread(hThreadTime);
 			if (GetOverlappedResult(controlData.data->hPipes[i].hInstancia, &controlData.data->hPipes[i].overlap, &nBytes, FALSE)) {
 				ResetEvent(controlData.data->hEvents[i]);
@@ -1048,16 +1634,7 @@ int _tmain(int argc, TCHAR** argv) {
 			}
 			numClientes++;
 		}
-		//if (controlData.game->suspended == 1) {
-			//SuspendThread(waterFlowThread);
-			//SuspendThread(hThreadTime);
-			//SuspendThread(receiveCommandsMonitorThread);
-		//}
-		//else {
-			//ResumeThread(waterFlowThread);
-			//ResumeThread(hThreadTime);
-			//ResumeThread(receiveCommandsMonitorThread);
-		//}
+
 	}
 	for (i = 0; i < N; i++) {
 		_tprintf(_T("Shutting down the the pipe.\n"));

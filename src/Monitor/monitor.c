@@ -13,14 +13,28 @@
 
 void showBoard(ControlData* data) {
 	WaitForSingleObject(data->hMutex, INFINITE);
-	_tprintf(TEXT("\n\nTime: [%d]\n\n"), data->game->time);
-	for (DWORD i = 0; i < data->game->rows; i++)
-	{
-		_tprintf(TEXT("\n"));
-		for (DWORD j = 0; j < data->game->columns; j++)
-			_tprintf(TEXT("%c "), data->game->board[i][j]);
-	}
-	_tprintf(TEXT("\n\n"));
+		if(data->game[0].gameType == 1){
+			_tprintf(TEXT("\n\nTime: [%d]\n\n"), data->game[0].time);
+			for (DWORD i = 0; i < data->game[0].rows; i++)
+			{
+				_tprintf(TEXT("\n"));
+				for (DWORD j = 0; j < data->game[0].columns; j++)
+					_tprintf(TEXT("%c "), data->game[0].board[i][j]);
+			}
+				_tprintf(TEXT("\n\n"));
+		}
+		else {
+			for (int k = 0; k < 2; k++) {
+					_tprintf(TEXT("\n\nTime: [%d]\n\n"), data->game[k].time);
+					for (DWORD i = 0; i < data->game[k].rows; i++)
+					{
+						_tprintf(TEXT("\n"));
+						for (DWORD j = 0; j < data->game[k].columns; j++)
+							_tprintf(TEXT("%c "), data->game[k].board[i][j]);
+					}
+					_tprintf(TEXT("\n\n"));
+			}
+		}
 	ReleaseMutex(data->hMutex);
 }
 
@@ -29,11 +43,14 @@ DWORD WINAPI receiveData(LPVOID p) {
 	ControlData* data = (ControlData*)p;
 
 	while (1) {
-		if (data->game->shutdown == 1)
+		if (data->game[0].shutdown == 1)
 			return 0;
 		WaitForSingleObject(data->hReadSem, 2000);
 		WaitForSingleObject(data->hMutex, 2000);
-		CopyMemory(data->game, &(data->sharedMemGame->game), sizeof(Game));
+		CopyMemory(&(data->game[0]), &(data->sharedMemGame->game[0]), sizeof(Game));
+		if (data->game[0].gameType == 2) {
+			CopyMemory(&(data->game[1]), &(data->sharedMemGame->game[1]), sizeof(Game));
+		}
 		ReleaseMutex(data->hMutex);
 		ReleaseSemaphore(data->hWriteSem, 1, NULL);
 
@@ -245,9 +262,10 @@ int _tmain(int argc, TCHAR** argv) {
 	(void)_setmode(_fileno(stdout), _O_WTEXT);
 	(void)_setmode(_fileno(stderr), _O_WTEXT);
 #endif
-	Game game;
+	Game game[2];
 	ControlData controlData;
-	controlData.game = &game;
+	controlData.game[0] = game[0];
+	controlData.game[1] = game[1];
 	HANDLE hThreadReceiveDataFromServer;
 	HANDLE executeCommandsThread;
 	HANDLE showBoardThread;
