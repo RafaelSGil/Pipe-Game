@@ -55,6 +55,7 @@ TCHAR szProgName[] = TEXT("Base");
 // ShowWindow()
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nCmdShow) {
 	HWND hWnd; // hWnd é o handler da janela, gerado mais abaixo por CreateWindow()
+	HWND hButton;
 	MSG lpMsg; // MSG é uma estrutura definida no Windows para as mensagens
 	WNDCLASSEX wcApp; // WNDCLASSEX é uma estrutura cujos membros servem para 
 	Game game;
@@ -128,6 +129,18 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		(HINSTANCE)hInst, // handle da instância do programa actual ("hInst" é 
 		// passado num dos parâmetros de WinMain()
 		0); // Não há parâmetros adicionais para a janela
+	HWND hwndButton = CreateWindow(
+		L"BUTTON",  // Predefined class; Unicode assumed 
+		L"Pause!",      // Button text 
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+		650,         // x position 
+		600,         // y position 
+		100,        // Button width
+		50,        // Button height
+		hWnd,     // Parent window
+		NULL,       // No menu.
+		NULL,
+		NULL);
 		SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
 		
 	// ============================================================================

@@ -1,5 +1,6 @@
 ﻿  ClientUI.c
 C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(24,8): warning C4101: 'option': variável local não referenciada
-C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(245,18): warning C4018: '<': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(247,19): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(58,7): warning C4101: 'hButton': variável local não referenciada
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(258,18): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(260,19): warning C4018: '<': incompatibilidade de signed/unsigned
   ClientUI.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\src\x64\Debug\ClientUI.exe
