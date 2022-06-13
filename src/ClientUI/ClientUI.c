@@ -3,6 +3,7 @@
 #include <tchar.h>
 #include "../Server/Game.h"
 #include "Client.h"
+#include "../Server/Pipes.h"
 /* ===================================================== */
 /* Programa base (esqueleto) para aplicações Windows */
 /* ===================================================== */
@@ -25,12 +26,10 @@ DWORD WINAPI clientThread(LPVOID* param) {
 	ClientData* data = (ClientData*)param;
 	while (data->game->shutdown == 0) {
 		ret = ReadFile(data->hPipe, data->game, sizeof(Game), &n, NULL);
+		if(ret)
+			_tprintf(_T("ALOALO"));
 	}
 	return(1);
-}
-
-DWORD writePipe(ClientData* data) {
-
 }
 
 LRESULT CALLBACK HandleProcedures(HWND, UINT, WPARAM, LPARAM);
@@ -59,9 +58,24 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	MSG lpMsg; // MSG é uma estrutura definida no Windows para as mensagens
 	WNDCLASSEX wcApp; // WNDCLASSEX é uma estrutura cujos membros servem para 
 	Game game;
-	HANDLE hPipe;
+	ClientData data;
+	HANDLE hThread;
 	game.shutdown = 0;
 	game.suspended = 0;
+	data.game = &game;
+	data.hPipe = CreateFile(PIPE_NAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL, NULL);
+	if (data.hPipe == NULL) {
+		_tprintf(TEXT("Error connecting to the pipe (CreateFile) (%d)\n"), GetLastError());
+		exit(-1);
+	}
+	data.game->rows = 20;
+	data.game->columns = 20;
+	hThread = CreateThread(NULL, 0, clientThread, &data, 0, NULL);
+	if (hThread == NULL) {
+		_tprintf(_T("\nError creating the thread for the client. (%d)"), GetLastError());
+		exit(-1);
+	}
 	// definir as características da classe da janela
 	// ============================================================================
 		// 1. Definição das características da janela "wcApp" 
@@ -89,7 +103,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	wcApp.lpszMenuName = NULL; // Classe do menu que a janela pode ter
    // (NULL = não tem menu)
 	wcApp.cbClsExtra = 0; // Livre, para uso particular
-	wcApp.cbWndExtra = 0; // Livre, para uso particular
+	wcApp.cbWndExtra = sizeof(ClientData*); // Livre, para uso particular
 	wcApp.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(175, 86, 162));
 	// "hbrBackground" = handler para "brush" de pintura do fundo da janela. Devolvido por
 	// "GetStockObject".Neste caso o fundo será branco
@@ -116,6 +130,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		(HINSTANCE)hInst, // handle da instância do programa actual ("hInst" é 
 		// passado num dos parâmetros de WinMain()
 		0); // Não há parâmetros adicionais para a janela
+		SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
 		
 	// ============================================================================
 // 4. Mostrar a janela
@@ -125,6 +140,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
    // "CreateWindow"; "nCmdShow"= modo de exibição (p.e. 
    // normal/modal); é passado como parâmetro de WinMain()
 	UpdateWindow(hWnd); // Refrescar a janela (Windows envia à janela uma 
+
    // mensagem para pintar, mostrar dados, (refrescar)… 
    // ============================================================================
    // 5. Loop de Mensagens
@@ -179,7 +195,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 // WM_DESTROY, WM_CHAR, WM_KEYDOWN, WM_PAINT...) definidas em windows.h
 // ============================================================================
 
-LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam, ClientData*data) {
+LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam) {
 	DWORD xPos;
 	DWORD yPos;
 	RECT rect;
@@ -188,6 +204,12 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 	static TCHAR c = TEXT('?');
 	static BOOL flag = FALSE;
 	static int totalPos = 0;
+	ClientData* data;
+	data = (ClientData*)GetWindowLongPtr(hWnd, 0);
+	static HBITMAP hBmp[7];
+	static BITMAP bmp;
+	static HDC bmpDC = NULL;
+
 	switch (messg) {
 	case WM_CHAR:
 		c = (TCHAR)wParam;
@@ -218,11 +240,11 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 		{
 			hdc = BeginPaint(hWnd, &ps);
 			int i = 0, j;
-			int Lx1 = 750, Lx2 = 500;
-			int Cy1 = 150, Cy2 = 150;
-			for (j = 0; j < 20; j++)
+			int Lx1 = 750, Lx2 = 500; // cell moves horizontally
+			int Cy1 = 150, Cy2 = 150;	// cell moves vertically
+			for (j = 0; j < data->game->rows; j++)
 			{
-				for (i = 0; i < 20; i++)
+				for (i = 0; i < data->game->columns; i++)
 				{
 					Rectangle(hdc, Lx1, Cy1, Lx2, Cy2);
 					Lx1 = Lx2;
