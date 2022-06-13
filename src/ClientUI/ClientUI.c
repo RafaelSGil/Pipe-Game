@@ -69,8 +69,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		_tprintf(TEXT("Error connecting to the pipe (CreateFile) (%d)\n"), GetLastError());
 		exit(-1);
 	}
-	data.game->rows = 20;
-	data.game->columns = 20;
 	hThread = CreateThread(NULL, 0, clientThread, &data, 0, NULL);
 	if (hThread == NULL) {
 		_tprintf(_T("\nError creating the thread for the client. (%d)"), GetLastError());
@@ -209,6 +207,7 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 	static HBITMAP hBmp[7];
 	static BITMAP bmp;
 	static HDC bmpDC = NULL;
+	int Lx1=0, Lx2=0, Cy1=0, Cy2=0;
 
 	switch (messg) {
 	case WM_CHAR:
@@ -240,8 +239,9 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 		{
 			hdc = BeginPaint(hWnd, &ps);
 			int i = 0, j;
-			int Lx1 = 750, Lx2 = 500; // cell moves horizontally
-			int Cy1 = 150, Cy2 = 150;	// cell moves vertically
+
+			Lx1 = 550, Lx2 = 570; // cell moves horizontally
+			Cy1 = 150, Cy2 = 150;	// cell moves vertically
 			for (j = 0; j < data->game->rows; j++)
 			{
 				for (i = 0; i < data->game->columns; i++)
@@ -250,9 +250,11 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 					Lx1 = Lx2;
 					Lx2 = Lx2 + 20;
 				}
+
 				Cy1 = Cy2;
 				Cy2 = Cy2 + 20;
-				Lx1 = 750; Lx2 = 500;
+				Lx1 = 550; Lx2 = 570;
+
 			}
 			EndPaint(hWnd, &ps);
 		}
