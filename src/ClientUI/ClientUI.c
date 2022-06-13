@@ -120,8 +120,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU, // Estilo da janela (WS_OVERLAPPED= normal)
 		CW_USEDEFAULT, // Posição x pixels (default=à direita da última)
 		CW_USEDEFAULT, // Posição y pixels (default=abaixo da última)
-		CW_USEDEFAULT, // Largura da janela (em pixels)
-		CW_USEDEFAULT, // Altura da janela (em pixels)
+		1600, // Largura da janela (em pixels)
+		800, // Altura da janela (em pixels)
 		(HWND)HWND_DESKTOP, // handle da janela pai (se se criar uma a partir de
 		// outra) ou HWND_DESKTOP se a janela for a primeira, 
 		// criada a partir do "desktop"
@@ -129,11 +129,11 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		(HINSTANCE)hInst, // handle da instância do programa actual ("hInst" é 
 		// passado num dos parâmetros de WinMain()
 		0); // Não há parâmetros adicionais para a janela
-	HWND hwndButton = CreateWindow(
+	HWND hwndButtonPause = CreateWindow(
 		L"BUTTON",  // Predefined class; Unicode assumed 
-		L"Pause!",      // Button text 
+		L"Pause",      // Button text 
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-		650,         // x position 
+		750,         // x position 
 		600,         // y position 
 		100,        // Button width
 		50,        // Button height
@@ -142,6 +142,20 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		NULL,
 		NULL);
 		SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
+
+	HWND hwndButtonQuit = CreateWindow(
+		L"BUTTON",  // Predefined class; Unicode assumed 
+		L"Quit",      // Button text 
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+		1450,         // x position 
+		700,         // y position 
+		100,        // Button width
+		50,        // Button height
+		hWnd,     // Parent window
+		NULL,       // No menu.
+		NULL,
+		NULL);
+	SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
 		
 	// ============================================================================
 // 4. Mostrar a janela
@@ -212,6 +226,7 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 	RECT rect;
 	HDC hdc;
 	PAINTSTRUCT ps;
+	DWORD totalOfPixels=0;
 	static TCHAR c = TEXT('?');
 	static BOOL flag = FALSE;
 	static int totalPos = 0;
@@ -252,8 +267,8 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 		{
 			hdc = BeginPaint(hWnd, &ps);
 			int i = 0, j;
-
-			Lx1 = 550, Lx2 = 570; // cell moves horizontally
+			totalOfPixels = data->game->columns * 20;
+			Lx1 = (800 - totalOfPixels/2), Lx2 += Lx1 + 20; // cell moves horizontally
 			Cy1 = 150, Cy2 = 150;	// cell moves vertically
 			for (j = 0; j < data->game->rows; j++)
 			{
@@ -266,7 +281,7 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 
 				Cy1 = Cy2;
 				Cy2 = Cy2 + 20;
-				Lx1 = 550; Lx2 = 570;
+				Lx1 = (800 - totalOfPixels / 2); Lx2 = Lx1 + 20;
 
 			}
 			EndPaint(hWnd, &ps);
