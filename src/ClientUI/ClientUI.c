@@ -4,6 +4,7 @@
 #include "../Server/Game.h"
 #include "Client.h"
 #include "../Server/Pipes.h"
+#include "resource.h"
 /* ===================================================== */
 /* Programa base (esqueleto) para aplicações Windows */
 /* ===================================================== */
@@ -26,8 +27,6 @@ DWORD WINAPI clientThread(LPVOID* param) {
 	ClientData* data = (ClientData*)param;
 	while (data->game->shutdown == 0) {
 		ret = ReadFile(data->hPipe, data->game, sizeof(Game), &n, NULL);
-		if(ret)
-			_tprintf(_T("ALOALO"));
 	}
 	return(1);
 }
@@ -138,21 +137,35 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		100,        // Button width
 		50,        // Button height
 		hWnd,     // Parent window
-		NULL,       // No menu.
+		(HMENU) BTN_PAUSE,       // No menu.
 		NULL,
 		NULL);
+		SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
+
+		HWND hwndButtonResume = CreateWindow(
+			L"BUTTON",  // Predefined class; Unicode assumed 
+			L"Resume",      // Button text 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			600,         // x position 
+			600,         // y position 
+			100,        // Button width
+			50,        // Button height
+			hWnd,     // Parent window
+			(HMENU)BTN_RESUME,       // No menu.
+			NULL,
+			NULL);
 		SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
 
 	HWND hwndButtonQuit = CreateWindow(
 		L"BUTTON",  // Predefined class; Unicode assumed 
 		L"Quit",      // Button text 
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-		1450,         // x position 
+		900,         // x position 
 		700,         // y position 
 		100,        // Button width
 		50,        // Button height
 		hWnd,     // Parent window
-		NULL,       // No menu.
+		(HMENU) BTN_QUIT,       // No menu.
 		NULL,
 		NULL);
 	SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
@@ -238,6 +251,21 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 	int Lx1=0, Lx2=0, Cy1=0, Cy2=0;
 
 	switch (messg) {
+	case WM_COMMAND:
+		if (LOWORD(wParam) == BTN_QUIT){
+			data->game->shutdown = 1;
+			PostQuitMessage(0);
+		}
+		if (LOWORD(wParam) == BTN_PAUSE){
+			data->game->suspended = 1;
+			//WriteFile(data->hPipe, data->game, sizeof(Game), NULL, NULL);
+		}
+		if (LOWORD(wParam) == BTN_RESUME){
+			data->game->suspended = 0;
+			//WriteFile(data->hPipe, data->game, sizeof(Game), NULL, NULL);
+		}
+
+	break;
 	case WM_CHAR:
 		c = (TCHAR)wParam;
 	break;
@@ -263,12 +291,11 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 		break;
 
 	case WM_PAINT:
-		if (flag)
-		{
 			hdc = BeginPaint(hWnd, &ps);
-			int i = 0, j;
+			int i = 0, j = 0;
 			totalOfPixels = data->game->columns * 20;
-			Lx1 = (800 - totalOfPixels/2), Lx2 += Lx1 + 20; // cell moves horizontally
+			Lx1 = (800 - (totalOfPixels / 2)); 
+			Lx2 = Lx1 + 20; // cell moves horizontally
 			Cy1 = 150, Cy2 = 150;	// cell moves vertically
 			for (j = 0; j < data->game->rows; j++)
 			{
@@ -278,14 +305,13 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 					Lx1 = Lx2;
 					Lx2 = Lx2 + 20;
 				}
-
+				_tprintf(_T("%d"), data->game->rows);
 				Cy1 = Cy2;
 				Cy2 = Cy2 + 20;
 				Lx1 = (800 - totalOfPixels / 2); Lx2 = Lx1 + 20;
 
 			}
 			EndPaint(hWnd, &ps);
-		}
 		break;
 	case WM_DESTROY: // Destruir a janela e terminar o programa 
 	// "PostQuitMessage(Exit Status)"
