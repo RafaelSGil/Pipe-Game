@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <tchar.h>
 #include <stdbool.h>
-
 #include "Names.h"
 #include "Registry.h"
 #include  "Game.h"
@@ -1572,7 +1571,7 @@ int _tmain(int argc, TCHAR** argv) {
 			_tprintf(_T("\nError creating the event.\n"));
 			exit(-1);
 		}
-		hPipe = CreateNamedPipe(PIPE_NAME, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, N, 256 * sizeof(TCHAR), 256 * sizeof(TCHAR), 1000, NULL);
+		hPipe = CreateNamedPipe(PIPE_NAME, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_WAIT | PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, N, sizeof(Game), sizeof(Game), 1000, NULL);
 		if (hPipe == INVALID_HANDLE_VALUE) {
 			_tprintf(_T("\nError creating the named pipe.\n"));
 			exit(-1);
@@ -1583,6 +1582,10 @@ int _tmain(int argc, TCHAR** argv) {
 		controlData.data->hEvents[i] = hEventTemp;
 		controlData.data->hPipes[i].activo = FALSE;
 
+		//repetir codigo thread
+		//fora do for esperar pelos eventos
+		//em cada read fazer zero memory e colocar eventos
+		//mandar estrutura overlapped nos reads e writes
 		if (ConnectNamedPipe(hPipe, &controlData.data->hPipes[i].overlap)) {
 			_tprintf(_T("\nError while connecting to the client...\n"));
 			exit(-1);

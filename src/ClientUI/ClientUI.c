@@ -63,17 +63,11 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	game.shutdown = 0;
 	game.suspended = 0;
 	data.game = &game;
-	data.hPipe = CreateFile(PIPE_NAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL, NULL);
-	if (data.hPipe == NULL) {
-		_tprintf(TEXT("Error connecting to the pipe (CreateFile) (%d)\n"), GetLastError());
-		exit(-1);
-	}
-	hThread = CreateThread(NULL, 0, clientThread, &data, 0, NULL);
-	if (hThread == NULL) {
-		_tprintf(_T("\nError creating the thread for the client. (%d)"), GetLastError());
-		exit(-1);
-	}
+	//hThread = CreateThread(NULL, 0, clientThread, &data, 0, NULL);
+	//if (hThread == NULL) {
+		//_tprintf(_T("\nError creating the thread for the client. (%d)"), GetLastError());
+		//exit(-1);
+	//7}
 	// definir as características da classe da janela
 	// ============================================================================
 		// 1. Definição das características da janela "wcApp" 
@@ -128,6 +122,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		(HINSTANCE)hInst, // handle da instância do programa actual ("hInst" é 
 		// passado num dos parâmetros de WinMain()
 		0); // Não há parâmetros adicionais para a janela
+	SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
 	HWND hwndButtonPause = CreateWindow(
 		L"BUTTON",  // Predefined class; Unicode assumed 
 		L"Pause",      // Button text 
@@ -140,7 +135,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		(HMENU) BTN_PAUSE,       // No menu.
 		NULL,
 		NULL);
-		SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
 
 		HWND hwndButtonResume = CreateWindow(
 			L"BUTTON",  // Predefined class; Unicode assumed 
@@ -154,8 +148,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 			(HMENU)BTN_RESUME,       // No menu.
 			NULL,
 			NULL);
-		SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
-
 	HWND hwndButtonQuit = CreateWindow(
 		L"BUTTON",  // Predefined class; Unicode assumed 
 		L"Quit",      // Button text 
@@ -245,12 +237,23 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 	static int totalPos = 0;
 	ClientData* data;
 	data = (ClientData*)GetWindowLongPtr(hWnd, 0);
-	static HBITMAP hBmp[7];
+	static HBITMAP hBmp;
 	static BITMAP bmp;
 	static HDC bmpDC = NULL;
+	static int xBitmap;
+	static int yBitmap;
 	int Lx1=0, Lx2=0, Cy1=0, Cy2=0;
 
 	switch (messg) {
+	case WM_CREATE:
+		hBmp = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/tubo_baixo_direito.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		GetObject(hBmp, sizeof(bmp), &bmp);
+		hdc = GetDC(hWnd);
+		bmpDC = CreateCompatibleDC(hdc);
+		SelectObject(bmpDC, hBmp);
+		ReleaseDC(hWnd, hdc);
+		GetClientRect(hWnd, &rect);
+	break;
 	case WM_COMMAND:
 		if (LOWORD(wParam) == BTN_QUIT){
 			data->game->shutdown = 1;
@@ -292,25 +295,40 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 
 	case WM_PAINT:
 			hdc = BeginPaint(hWnd, &ps);
-			int i = 0, j = 0;
-			totalOfPixels = data->game->columns * 20;
-			Lx1 = (800 - (totalOfPixels / 2)); 
-			Lx2 = Lx1 + 20; // cell moves horizontally
-			Cy1 = 150, Cy2 = 150;	// cell moves vertically
-			for (j = 0; j < data->game->rows; j++)
-			{
-				for (i = 0; i < data->game->columns; i++)
-				{
-					Rectangle(hdc, Lx1, Cy1, Lx2, Cy2);
-					Lx1 = Lx2;
-					Lx2 = Lx2 + 20;
+			GetClientRect(hWnd, &rect);
+			FillRect(hdc, &rect, CreateSolidBrush(RGB(255, 0, 0)));
+			totalOfPixels = 35 * 10;		// colocar colunas que le do pipe no futuro
+			xBitmap = (800 - (totalOfPixels / 2));
+			yBitmap = 150;
+			BitBlt(hdc, xBitmap, yBitmap, bmp.bmWidth, bmp.bmHeight, bmpDC, 0, 0, SRCCOPY);
+			for (int j = 0; j < 10; j++) { // colocar linhas que le do pipe no futuro
+				for (int i = 0; i < 10; i++) {	// colocar colunas que le do pipe no futuro
+					BitBlt(hdc, xBitmap, yBitmap, bmp.bmWidth, bmp.bmHeight, bmpDC, 0, 0, SRCCOPY);
+					xBitmap = xBitmap + 35;                                                               
 				}
-				_tprintf(_T("%d"), data->game->rows);
-				Cy1 = Cy2;
-				Cy2 = Cy2 + 20;
-				Lx1 = (800 - totalOfPixels / 2); Lx2 = Lx1 + 20;
-
+				xBitmap = (800 - (totalOfPixels / 2));
+				yBitmap = yBitmap + 35;
+				
 			}
+			//int i = 0, j = 0;
+			//totalOfPixels = 20 * 20;
+			//Lx1 = (800 - (totalOfPixels / 2)); 
+			//Lx2 = Lx1 + 20; // cell moves horizontally
+			//Cy1 = 150, Cy2 = 150;	// cell moves vertically
+			//for (j = 0; j < 20; j++)
+			//{
+			//	for (i = 0; i < 20; i++)
+			//	{
+			//		Rectangle(hdc, Lx1, Cy1, Lx2, Cy2);
+			//		Lx1 = Lx2;
+			//		Lx2 = Lx2 + 20;
+			//	}
+			//	_tprintf(_T("%d"), data->game->rows);
+			//	Cy1 = Cy2;
+			//	Cy2 = Cy2 + 20;
+			//	Lx1 = (800 - totalOfPixels / 2); Lx2 = Lx1 + 20;
+
+			//}
 			EndPaint(hWnd, &ps);
 		break;
 	case WM_DESTROY: // Destruir a janela e terminar o programa 
