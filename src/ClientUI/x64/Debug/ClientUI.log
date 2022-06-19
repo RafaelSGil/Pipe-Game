@@ -1,1 +1,4 @@
-﻿  ClientUI.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\src\x64\Debug\ClientUI.exe
+﻿  ClientUI.c
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(286,22): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(287,23): warning C4018: '<': incompatibilidade de signed/unsigned
+  ClientUI.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\src\x64\Debug\ClientUI.exe

@@ -67,6 +67,7 @@ DWORD WINAPI pipesThread(LPVOID* param) {
 				}
 				else {
 					ret = ReadFile(dados->data->hPipes[i].hInstancia, &dados->game[i], sizeof(Game), &n, NULL);
+					dados->game->board[dados->game->row][dados->game->column] = dados->game->piece;
 				}
 			}
 			ReleaseMutex(dados->data->hMutex);
@@ -1489,10 +1490,10 @@ int _tmain(int argc, TCHAR** argv) {
 #endif
 
 	// Variables
-	Registry registry;
-	Game game[2];
-	threadData data;
-	ControlData controlData;
+	Registry registry = {0};
+	Game game[2] = {0};
+	threadData data = {0};
+	ControlData controlData = {0};
 	controlData.game[0] = game[0];
 	controlData.game[1] = game[1];
 	controlData.data = &data;
@@ -1656,9 +1657,9 @@ int _tmain(int argc, TCHAR** argv) {
 
 	}
 	for (i = 0; i < N; i++) {
-		_tprintf(_T("Shutting down the the pipe.\n"));
+		_tprintf(_T("\nShutting down the the pipe.\n"));
 		if (!DisconnectNamedPipe(controlData.data->hPipes[i].hInstancia)) {
-			_tprintf(_T("Error shutting down the pipe (DisconnectNamedPipe) %d.\n"), GetLastError());
+			_tprintf(_T("\nError shutting down the pipe (DisconnectNamedPipe) %d.\n"), GetLastError());
 			exit(-1);
 		}
 		CloseHandle(controlData.data->hPipes[i].hInstancia);

@@ -80,7 +80,6 @@ void playGame(Game* game, HANDLE hPipe) {
 			}
 		} while ((row == game->begginingR && column == game->begginingC) || (row == game->endR && column == game->endC));
 		if(row != -1 && column != -1){
-			game->board[row][column] = game->pieces[game->index];
 			game->row = row;
 			game->column = column;
 			game->index++;

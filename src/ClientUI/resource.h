@@ -15,8 +15,6 @@
 #define IDR_MENU1                       129
 #define IDC_STATIC                      -1
 #define BTN_QUIT						150
-#define BTN_PAUSE						151
-#define BTN_RESUME						152
 
 // Next default values for new objects
 // 

@@ -5,6 +5,7 @@
 #include "Client.h"
 #include "../Server/Pipes.h"
 #include "resource.h"
+HANDLE hWnd;
 /* ===================================================== */
 /* Programa base (esqueleto) para aplicações Windows */
 /* ===================================================== */
@@ -20,13 +21,11 @@
 DWORD WINAPI clientThread(LPVOID* param) {
 	BOOL ret;
 	DWORD n;
-	unsigned int row = 50;
-	unsigned int column = 50;
-	TCHAR option[256];
-	unsigned int number = 0;
 	ClientData* data = (ClientData*)param;
 	while (data->game->shutdown == 0) {
 		ret = ReadFile(data->hPipe, data->game, sizeof(Game), &n, NULL);
+		if (!ret)
+			WriteFile(data->hPipe, data->game, sizeof(Game), &n, NULL);
 	}
 	return(1);
 }
@@ -53,8 +52,6 @@ TCHAR szProgName[] = TEXT("Base");
 // nCmdShow: Parâmetro que especifica o modo de exibição da janela (usado em 
 // ShowWindow()
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nCmdShow) {
-	HWND hWnd; // hWnd é o handler da janela, gerado mais abaixo por CreateWindow()
-	HWND hButton;
 	MSG lpMsg; // MSG é uma estrutura definida no Windows para as mensagens
 	WNDCLASSEX wcApp; // WNDCLASSEX é uma estrutura cujos membros servem para 
 	Game game;
@@ -63,11 +60,14 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	game.shutdown = 0;
 	game.suspended = 0;
 	data.game = &game;
-	//hThread = CreateThread(NULL, 0, clientThread, &data, 0, NULL);
-	//if (hThread == NULL) {
-		//_tprintf(_T("\nError creating the thread for the client. (%d)"), GetLastError());
-		//exit(-1);
-	//7}
+	data.hPipe = CreateFile(PIPE_NAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL, NULL);
+	
+	hThread = CreateThread(NULL, 0, clientThread, &data, 0, NULL);
+	if (hThread == NULL) {
+		_tprintf(_T("\nError creating the thread for the client. (%d)"), GetLastError());
+		exit(-1);
+	}
 	// definir as características da classe da janela
 	// ============================================================================
 		// 1. Definição das características da janela "wcApp" 
@@ -123,45 +123,21 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		// passado num dos parâmetros de WinMain()
 		0); // Não há parâmetros adicionais para a janela
 	SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
-	HWND hwndButtonPause = CreateWindow(
-		L"BUTTON",  // Predefined class; Unicode assumed 
-		L"Pause",      // Button text 
-		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-		750,         // x position 
-		600,         // y position 
-		100,        // Button width
-		50,        // Button height
-		hWnd,     // Parent window
-		(HMENU) BTN_PAUSE,       // No menu.
-		NULL,
-		NULL);
-
-		HWND hwndButtonResume = CreateWindow(
-			L"BUTTON",  // Predefined class; Unicode assumed 
-			L"Resume",      // Button text 
-			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-			600,         // x position 
-			600,         // y position 
-			100,        // Button width
-			50,        // Button height
-			hWnd,     // Parent window
-			(HMENU)BTN_RESUME,       // No menu.
-			NULL,
-			NULL);
+	if (data.hPipe == INVALID_HANDLE_VALUE) {
+		DestroyWindow(hWnd);
+	}	
 	HWND hwndButtonQuit = CreateWindow(
 		L"BUTTON",  // Predefined class; Unicode assumed 
 		L"Quit",      // Button text 
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-		900,         // x position 
-		700,         // y position 
+		750,         // x position 
+		600,         // y position 
 		100,        // Button width
-		50,        // Button height
+		75,        // Button height
 		hWnd,     // Parent window
 		(HMENU) BTN_QUIT,       // No menu.
 		NULL,
 		NULL);
-	SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
-		
 	// ============================================================================
 // 4. Mostrar a janela
 // ============================================================================
@@ -230,6 +206,7 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 	DWORD yPos;
 	RECT rect;
 	HDC hdc;
+	HDC hdcPiece = NULL;
 	PAINTSTRUCT ps;
 	DWORD totalOfPixels=0;
 	static TCHAR c = TEXT('?');
@@ -238,48 +215,54 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 	ClientData* data;
 	data = (ClientData*)GetWindowLongPtr(hWnd, 0);
 	static HBITMAP hBmp;
-	static BITMAP bmp;
+	static HBITMAP hBmpBeggining;
+	static HBITMAP hBmpEnd;
+	static BITMAP bmp = { 0 };
+	static BITMAP bmpBeginning = { 0 };
+	static BITMAP bmpEnd = { 0 };
 	static HDC bmpDC = NULL;
+	static HDC bmpDCBeggining = NULL;
+	static HDC bmpDCEnd = NULL;
 	static int xBitmap;
 	static int yBitmap;
-	int Lx1=0, Lx2=0, Cy1=0, Cy2=0;
 
 	switch (messg) {
 	case WM_CREATE:
-		hBmp = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/tubo_baixo_direito.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		hBmp = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/boardCell.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		hBmpBeggining = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/posicao_inicio.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		hBmpEnd = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/posicao_fim.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
 		GetObject(hBmp, sizeof(bmp), &bmp);
+		GetObject(hBmpBeggining, sizeof(bmpBeginning), &bmpBeginning);
+		GetObject(hBmpEnd, sizeof(bmpEnd), &bmpEnd);
 		hdc = GetDC(hWnd);
 		bmpDC = CreateCompatibleDC(hdc);
+		bmpDCBeggining = CreateCompatibleDC(hdc);
+		bmpDCEnd = CreateCompatibleDC(hdc);
 		SelectObject(bmpDC, hBmp);
+		SelectObject(bmpDCBeggining, hBmpBeggining);
+		SelectObject(bmpDCEnd, hBmpEnd);
 		ReleaseDC(hWnd, hdc);
 		GetClientRect(hWnd, &rect);
 	break;
 	case WM_COMMAND:
 		if (LOWORD(wParam) == BTN_QUIT){
 			data->game->shutdown = 1;
-			PostQuitMessage(0);
+			Sleep(3000);
+			DestroyWindow(hWnd);
 		}
-		if (LOWORD(wParam) == BTN_PAUSE){
-			data->game->suspended = 1;
-			//WriteFile(data->hPipe, data->game, sizeof(Game), NULL, NULL);
-		}
-		if (LOWORD(wParam) == BTN_RESUME){
-			data->game->suspended = 0;
-			//WriteFile(data->hPipe, data->game, sizeof(Game), NULL, NULL);
-		}
-
 	break;
 	case WM_CHAR:
 		c = (TCHAR)wParam;
 	break;
 	case WM_CLOSE:
-		if(MessageBox(hWnd, _T("Tem a certeza que deseja sair?"), _T("Sair"), MB_YESNO) == IDYES)
+		if(MessageBox(hWnd, _T("Are you sure you want to leave?"), _T("Leave"), MB_YESNO) == IDYES)
 			DestroyWindow(hWnd);
 	break;
 	case WM_LBUTTONDOWN:
 		xPos = GET_X_LPARAM(lParam);
 		yPos = GET_Y_LPARAM(lParam);
 		hdc = GetDC(hWnd);
+
 		GetClientRect(hWnd, &rect);
 		SetTextColor(hdc, RGB(0, 0, 0));
 		SetBkMode(hdc, TRANSPARENT);
@@ -297,38 +280,27 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 			hdc = BeginPaint(hWnd, &ps);
 			GetClientRect(hWnd, &rect);
 			FillRect(hdc, &rect, CreateSolidBrush(RGB(255, 0, 0)));
-			totalOfPixels = 35 * 10;		// colocar colunas que le do pipe no futuro
+			totalOfPixels = 35 * data->game->columns;		// colocar colunas que le do pipe no futuro
 			xBitmap = (800 - (totalOfPixels / 2));
 			yBitmap = 150;
-			BitBlt(hdc, xBitmap, yBitmap, bmp.bmWidth, bmp.bmHeight, bmpDC, 0, 0, SRCCOPY);
-			for (int j = 0; j < 10; j++) { // colocar linhas que le do pipe no futuro
-				for (int i = 0; i < 10; i++) {	// colocar colunas que le do pipe no futuro
-					BitBlt(hdc, xBitmap, yBitmap, bmp.bmWidth, bmp.bmHeight, bmpDC, 0, 0, SRCCOPY);
+			for (int j = 0; j < data->game->rows; j++) { // colocar linhas que le do pipe no futuro
+				for (int i = 0; i < data->game->columns; i++) {	// colocar colunas que le do pipe no futuro
+					if (j == data->game->begginingR && i == data->game->begginingC) {
+							BitBlt(hdc, xBitmap, yBitmap, bmpBeginning.bmWidth, bmpBeginning.bmHeight, bmpDCBeggining, 0, 0, SRCCOPY);
+					}
+					else if (j == data->game->endR && i == data->game->endC) {
+						BitBlt(hdc, xBitmap, yBitmap, bmpEnd.bmWidth, bmpEnd.bmHeight, bmpDCEnd, 0, 0, SRCCOPY);
+					}
+					else {
+						BitBlt(hdc, xBitmap, yBitmap, bmp.bmWidth, bmp.bmHeight, bmpDC, 0, 0, SRCCOPY);
+					}
+					
 					xBitmap = xBitmap + 35;                                                               
 				}
 				xBitmap = (800 - (totalOfPixels / 2));
 				yBitmap = yBitmap + 35;
 				
 			}
-			//int i = 0, j = 0;
-			//totalOfPixels = 20 * 20;
-			//Lx1 = (800 - (totalOfPixels / 2)); 
-			//Lx2 = Lx1 + 20; // cell moves horizontally
-			//Cy1 = 150, Cy2 = 150;	// cell moves vertically
-			//for (j = 0; j < 20; j++)
-			//{
-			//	for (i = 0; i < 20; i++)
-			//	{
-			//		Rectangle(hdc, Lx1, Cy1, Lx2, Cy2);
-			//		Lx1 = Lx2;
-			//		Lx2 = Lx2 + 20;
-			//	}
-			//	_tprintf(_T("%d"), data->game->rows);
-			//	Cy1 = Cy2;
-			//	Cy2 = Cy2 + 20;
-			//	Lx1 = (800 - totalOfPixels / 2); Lx2 = Lx1 + 20;
-
-			//}
 			EndPaint(hWnd, &ps);
 		break;
 	case WM_DESTROY: // Destruir a janela e terminar o programa 
