@@ -4,5 +4,6 @@
 typedef struct _Client {
 	Game* game;
 	HANDLE hPipe;
+	HWND hwnd;
 }ClientData;
 #endif // !CLIENT

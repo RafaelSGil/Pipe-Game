@@ -69,6 +69,7 @@ DWORD WINAPI pipesThread(LPVOID* param) {
 					ret = ReadFile(dados->data->hPipes[i].hInstancia, &dados->game[i], sizeof(Game), &n, NULL);
 					dados->game->board[dados->game->row][dados->game->column] = dados->game->piece;
 				}
+				
 			}
 			ReleaseMutex(dados->data->hMutex);
 		}

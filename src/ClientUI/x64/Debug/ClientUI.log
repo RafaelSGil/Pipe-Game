@@ -1,4 +1,11 @@
 ﻿  ClientUI.c
-C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(286,22): warning C4018: '<': incompatibilidade de signed/unsigned
-C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(287,23): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(22,7): warning C4101: 'ret': variável local não referenciada
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(283,47): warning C4066: caracteres depois do primeiro em constante de caractere largo ignorados
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(285,32): warning C4066: caracteres depois do primeiro em constante de caractere largo ignorados
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(287,32): warning C4066: caracteres depois do primeiro em constante de caractere largo ignorados
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(289,32): warning C4066: caracteres depois do primeiro em constante de caractere largo ignorados
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(291,32): warning C4066: caracteres depois do primeiro em constante de caractere largo ignorados
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(309,22): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(310,23): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\Hugo\Desktop\Pipe-Game\src\ClientUI\ClientUI.c(211,8): warning C4101: 'n': variável local não referenciada
   ClientUI.vcxproj -> C:\Users\Hugo\Desktop\Pipe-Game\src\x64\Debug\ClientUI.exe

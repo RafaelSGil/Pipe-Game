@@ -23,8 +23,7 @@ DWORD WINAPI clientThread(LPVOID* param) {
 	DWORD n;
 	ClientData* data = (ClientData*)param;
 	while (data->game->shutdown == 0) {
-		ret = ReadFile(data->hPipe, data->game, sizeof(Game), &n, NULL);
-		if (!ret)
+			ReadFile(data->hPipe, data->game, sizeof(Game), &n, NULL);
 			WriteFile(data->hPipe, data->game, sizeof(Game), &n, NULL);
 	}
 	return(1);
@@ -122,7 +121,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		(HINSTANCE)hInst, // handle da instância do programa actual ("hInst" é 
 		// passado num dos parâmetros de WinMain()
 		0); // Não há parâmetros adicionais para a janela
+	data.hwnd = hWnd;
 	SetWindowLongPtr(hWnd, 0, (LONG_PTR)&data);
+
 	if (data.hPipe == INVALID_HANDLE_VALUE) {
 		DestroyWindow(hWnd);
 	}	
@@ -207,6 +208,7 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 	RECT rect;
 	HDC hdc;
 	HDC hdcPiece = NULL;
+	DWORD n;
 	PAINTSTRUCT ps;
 	DWORD totalOfPixels=0;
 	static TCHAR c = TEXT('?');
@@ -217,12 +219,16 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 	static HBITMAP hBmp;
 	static HBITMAP hBmpBeggining;
 	static HBITMAP hBmpEnd;
+	static HBITMAP hBmpPieces[6];
 	static BITMAP bmp = { 0 };
 	static BITMAP bmpBeginning = { 0 };
 	static BITMAP bmpEnd = { 0 };
+	static BITMAP bmpPieces[6] = {0};
 	static HDC bmpDC = NULL;
 	static HDC bmpDCBeggining = NULL;
 	static HDC bmpDCEnd = NULL;
+	static HDC bmpDCPieces[6];
+	static HDC hdcPieces[6] = { 0 };
 	static int xBitmap;
 	static int yBitmap;
 
@@ -231,16 +237,28 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 		hBmp = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/boardCell.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
 		hBmpBeggining = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/posicao_inicio.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
 		hBmpEnd = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/posicao_fim.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		hBmpPieces[0] = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/tubo_horizontal.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		hBmpPieces[1] = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/tubo_vertical.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		hBmpPieces[2] = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/tubo_cima_direito.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		hBmpPieces[3] = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/tubo_cima_esquerdo.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		hBmpPieces[4] = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/tubo_baixo_esquerdo.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
+		hBmpPieces[5] = (HBITMAP)LoadImage(NULL, TEXT("../../bitmaps/tubo_baixo_direito.bmp"), IMAGE_BITMAP, 35, 35, LR_LOADFROMFILE);
 		GetObject(hBmp, sizeof(bmp), &bmp);
 		GetObject(hBmpBeggining, sizeof(bmpBeginning), &bmpBeginning);
 		GetObject(hBmpEnd, sizeof(bmpEnd), &bmpEnd);
+		for (int i = 0; i < 6; i++)
+			GetObject(hBmpPieces[i], sizeof(bmpPieces[i]), &bmpPieces[i]);
 		hdc = GetDC(hWnd);
 		bmpDC = CreateCompatibleDC(hdc);
 		bmpDCBeggining = CreateCompatibleDC(hdc);
 		bmpDCEnd = CreateCompatibleDC(hdc);
+		for (int i = 0; i < 6; i++)
+			bmpDCPieces[i] = CreateCompatibleDC(hdc);
 		SelectObject(bmpDC, hBmp);
 		SelectObject(bmpDCBeggining, hBmpBeggining);
 		SelectObject(bmpDCEnd, hBmpEnd);
+		for (int i = 0; i < 6; i++)
+			SelectObject(bmpDCPieces[i], hBmpPieces[i]);
 		ReleaseDC(hWnd, hdc);
 		GetClientRect(hWnd, &rect);
 	break;
@@ -262,13 +280,18 @@ LRESULT CALLBACK HandleProcedures(HWND hWnd, UINT messg, WPARAM wParam, LPARAM l
 		xPos = GET_X_LPARAM(lParam);
 		yPos = GET_Y_LPARAM(lParam);
 		hdc = GetDC(hWnd);
-
-		GetClientRect(hWnd, &rect);
-		SetTextColor(hdc, RGB(0, 0, 0));
-		SetBkMode(hdc, TRANSPARENT);
-		rect.left = xPos;
-		rect.top = yPos;
-		DrawText(hdc, &c, 1, &rect, DT_SINGLELINE | DT_NOCLIP);
+		if(data->game->piece == TEXT('━'))
+			BitBlt(hdc, xPos, yPos, bmpPieces[0].bmHeight, bmpPieces[0].bmHeight, bmpDCPieces[0], 0, 0, SRCCOPY);
+		else if(data->game->piece == TEXT('┃'))
+			BitBlt(hdc, xPos, yPos, bmpPieces[1].bmHeight, bmpPieces[1].bmHeight, bmpDCPieces[1], 0, 0, SRCCOPY);
+		else if(data->game->piece == TEXT('┏'))
+			BitBlt(hdc, xPos, yPos, bmpPieces[2].bmHeight, bmpPieces[2].bmHeight, bmpDCPieces[2], 0, 0, SRCCOPY);
+		else if(data->game->piece == TEXT('┓'))
+			BitBlt(hdc, xPos, yPos, bmpPieces[3].bmHeight, bmpPieces[3].bmHeight, bmpDCPieces[3], 0, 0, SRCCOPY);
+		else if(data->game->piece == TEXT('┛'))
+			BitBlt(hdc, xPos, yPos, bmpPieces[4].bmHeight, bmpPieces[4].bmHeight, bmpDCPieces[4], 0, 0, SRCCOPY);
+		else 
+			BitBlt(hdc, xPos, yPos, bmpPieces[5].bmHeight, bmpPieces[5].bmHeight, bmpDCPieces[5], 0, 0, SRCCOPY);
 		ReleaseDC(hWnd, hdc);
 	break;
 	case WM_RBUTTONDOWN:
